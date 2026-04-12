@@ -8,6 +8,8 @@ import config from "../../../../../config";
 const execAsync = promisify(exec);
 
 function srtToVtt(srt) {
+srt = srt.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+
   let vtt = "WEBVTT\n\n";
   const blocks = srt.trim().split(/\n\s*\n/);
 
