@@ -33,20 +33,20 @@ export async function GET(request) {
 
     const movie = data.results[0];
     const result = {
-      found: true,
-      tmdbId: movie.id,
-      title: movie.title,
-      overview: movie.overview,
-      poster: movie.poster_path
-        ? `${config.tmdbImageBase}${movie.poster_path}`
-        : null,
-      backdrop: movie.backdrop_path
-        ? `https://image.tmdb.org/t/p/w1280${movie.backdrop_path}`
-        : null,
-      rating: movie.vote_average?.toFixed(1),
-      releaseDate: movie.release_date,
-    };
-
+  found: true,
+  tmdbId: movie.id,
+  title: movie.title,
+  overview: movie.overview,
+  poster: movie.poster_path
+    ? `${config.tmdbImageBase}${movie.poster_path}`
+    : null,
+  backdrop: movie.backdrop_path
+    ? `https://image.tmdb.org/t/p/w1280${movie.backdrop_path}`
+    : null,
+  rating: movie.vote_average?.toFixed(1),
+  releaseDate: movie.release_date,
+  genres: (movie.genre_ids || []).map((id) => config.tmdbGenres[id]).filter(Boolean),
+};
     // Simpan ke cache
     setMetadataCache(title, year, result);
 
