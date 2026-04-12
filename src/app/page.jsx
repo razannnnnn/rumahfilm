@@ -12,7 +12,7 @@ async function getFilmsWithMetadata() {
       try {
         const metaRes = await fetch(
           `${baseUrl}/api/metadata?title=${encodeURIComponent(film.title)}&year=${film.year || ""}`,
-          { cache: "force-cache" }
+          { cache: "no-store" }
         );
         const meta = await metaRes.json();
         return {
@@ -21,9 +21,10 @@ async function getFilmsWithMetadata() {
           rating: meta.found ? meta.rating : null,
           overview: meta.found ? meta.overview : null,
           backdrop: meta.found ? meta.backdrop : null,
+          genres: meta.found ? (meta.genres || []) : [],
         };
       } catch {
-        return { ...film, poster: null, rating: null, overview: null, backdrop: null };
+        return { ...film, poster: null, rating: null, overview: null, backdrop: null, genres: null, };
       }
     })
   );
