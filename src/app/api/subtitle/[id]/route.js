@@ -79,7 +79,8 @@ if (fs.existsSync(vttPath)) {
 
 // ← TAMBAHKAN INI: Kalau SRT sudah ada, convert langsung tanpa ffmpeg
 if (fs.existsSync(srtPath)) {
-  const srtContent = fs.readFileSync(srtPath, "utf-8");
+  const srtBuffer = fs.readFileSync(srtPath);
+const srtContent = srtBuffer.toString("utf8").replace(/\r\n/g, "\n").replace(/\r/g, "\n");
   const vttContent = srtToVtt(srtContent);
   fs.writeFileSync(vttPath, vttContent, "utf-8");
   return new Response(vttContent, {
