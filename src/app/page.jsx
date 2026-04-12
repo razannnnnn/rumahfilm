@@ -1,0 +1,53 @@
+import HeroBanner from "@/components/HeroBanner";
+import Sidebar from "@/components/Sidebar";
+import FilmGrid from "@/components/FilmGrid";
+
+async function getFilmsWithMetadata() {
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+  const filmsRes = await fetch(`${baseUrl}/api/films`, { cache: "no-store" });
+  const { films } = await filmsRes.json();
+
+  const filmsWithMeta = await Promise.all(
+    films.map(async (film) => {
+      try {
+        const metaRes = await fetch(
+          `${baseUrl}/api/metadata?title=${encodeURIComponent(film.title)}&year=${film.year || ""}`,
+          { cache: "force-cache" }
+        );
+        const meta = await metaRes.json();
+        return {
+          ...film,
+          poster: meta.found ? meta.poster : null,
+          rating: meta.found ? meta.rating : null,
+          overview: meta.found ? meta.overview : null,
+          backdrop: meta.found ? meta.backdrop : null,
+        };
+      } catch {
+        return { ...film, poster: null, rating: null, overview: null, backdrop: null };
+      }
+    })
+  );
+
+  return filmsWithMeta;
+}
+
+export default async function HomePage() {
+  const films = await getFilmsWithMetadata();
+
+  return (
+    <div style={{ display: "flex", minHeight: "100vh" }} className="bg-gray-50 dark:bg-[#111113]">
+      <Sidebar />
+
+      {/* Main — flex-1 otomatis mengisi sisa ruang setelah sidebar */}
+      <main style={{ flex: 1, minWidth: 0 }}>
+
+        {/* Hero banner */}
+        <HeroBanner films={films} />
+
+        {/* Film grid */}
+        <FilmGrid films={films} />
+
+      </main>
+    </div>
+  );
+}
