@@ -64,6 +64,30 @@ export async function GET(request, { params }) {
       });
     }
 
+    // Kalau VTT sudah ada, langsung serve
+if (fs.existsSync(vttPath)) {
+  const vtt = fs.readFileSync(vttPath, "utf-8");
+  return new Response(vtt, {
+    headers: {
+      "Content-Type": "text/vtt",
+      "Cache-Control": "public, max-age=86400",
+    },
+  });
+}
+
+// ← TAMBAHKAN INI: Kalau SRT sudah ada, convert langsung tanpa ffmpeg
+if (fs.existsSync(srtPath)) {
+  const srtContent = fs.readFileSync(srtPath, "utf-8");
+  const vttContent = srtToVtt(srtContent);
+  fs.writeFileSync(vttPath, vttContent, "utf-8");
+  return new Response(vttContent, {
+    headers: {
+      "Content-Type": "text/vtt",
+      "Cache-Control": "public, max-age=86400",
+    },
+  });
+}
+
     // Ekstrak subtitle dari MKV pakai ffmpeg
     // Coba index 3 (SRT) dulu, kalau gagal coba index 2 (ASS)
     let srtContent = null;
