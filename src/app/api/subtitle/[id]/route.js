@@ -44,10 +44,10 @@ export async function GET(request, { params }) {
 
     const ext = path.extname(filename).toLowerCase();
 
-    // Kalau bukan MKV, tidak ada subtitle embedded
-    if (ext !== ".mkv") {
-      return NextResponse.json({ error: "Bukan file MKV" }, { status: 404 });
-    }
+    // // Kalau bukan MKV, tidak ada subtitle embedded
+    // if (ext !== ".mkv") {
+    //   return NextResponse.json({ error: "Bukan file MKV" }, { status: 404 });
+    // }
 
     // Cek apakah sudah ada cache .srt
     const srtPath = videoPath.replace(/\.mkv$/i, ".srt");
