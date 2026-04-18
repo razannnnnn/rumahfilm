@@ -5,7 +5,7 @@ import { Providers } from "./providers";
 const geist = Geist({ subsets: ["latin"] });
 
 export const metadata = {
-  title: "RumahFilm",
+  title: "RumahFilm - By Razan",
   description: "Media server lokal pribadi",
 };
 
