@@ -7,9 +7,6 @@ const geist = Geist({ subsets: ["latin"] });
 export const metadata = {
   title: "RumahFilm",
   description: "Media server lokal pribadi",
-  icons: {
-    icon: "@/app/favicon.svg",
-  }
 };
 
 export default function RootLayout({ children }) {
