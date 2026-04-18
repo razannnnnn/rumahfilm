@@ -5,8 +5,7 @@ import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import { useEffect, useState } from "react";
 
-const { data: session } = useSession();
-const isAdmin = session?.user?.role === "admin";
+
 
 const navItems = [
   {
@@ -42,6 +41,9 @@ export default function Sidebar() {
   const pathname = usePathname();
   const [dark, setDark] = useState(false);
   const [open, setOpen] = useState(false);
+
+  const { data: session } = useSession();
+  const isAdmin = session?.user?.role === "admin";
 
   useEffect(() => {
     setDark(document.documentElement.classList.contains("dark"));
