@@ -1,6 +1,5 @@
 import HeroBanner from "@/components/HeroBanner";
-import dynamic from "next/dynamic";
-const Sidebar = dynamic(() => import("@/components/Sidebar"), { ssr: false });
+import SidebarWrapper from "@/components/SidebarWrapper";
 import FilmGrid from "@/components/FilmGrid";
 
 async function getFilmsWithMetadata() {
