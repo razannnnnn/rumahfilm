@@ -1,8 +1,8 @@
 "use client";
 import { useEffect, useState } from "react";
 import { motion } from "motion/react";
-import Sidebar from "@/components/Sidebar";
-import Link from "next/link";
+import dynamic from "next/dynamic";
+const Sidebar = dynamic(() => import("@/components/Sidebar"), { ssr: false });
 
 function GaugeBar({ value, max = 100, color = "#86efac" }) {
   const percent = Math.min((value / max) * 100, 100);

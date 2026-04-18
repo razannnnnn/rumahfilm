@@ -1,4 +1,5 @@
-import Sidebar from "@/components/Sidebar";
+import dynamic from "next/dynamic";
+const Sidebar = dynamic(() => import("@/components/Sidebar"), { ssr: false });
 import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
