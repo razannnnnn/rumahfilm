@@ -18,16 +18,14 @@ export async function GET(request) {
       return NextResponse.json(err, { status: res.status });
     }
 
-    const contentDisposition = res.headers.get("content-disposition");
-    const contentType = res.headers.get("content-type");
-    const contentLength = res.headers.get("content-length");
-
     return new NextResponse(res.body, {
       status: 200,
       headers: {
-        "Content-Disposition": contentDisposition ?? "attachment",
-        "Content-Type": contentType ?? "application/octet-stream",
-        ...(contentLength && { "Content-Length": contentLength }),
+        "Content-Disposition": res.headers.get("content-disposition") ?? `attachment; filename="${filePath}"`,
+        "Content-Type": res.headers.get("content-type") ?? "application/octet-stream",
+        ...(res.headers.get("content-length") && {
+          "Content-Length": res.headers.get("content-length"),
+        }),
       },
     });
   } catch (err) {
