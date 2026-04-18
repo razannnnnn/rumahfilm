@@ -6,16 +6,22 @@ export const dynamic = "force-dynamic";
 import Sidebar from "@/components/Sidebar";
 
 async function getFilmDetail(id) {
-  const stbUrl = process.env.NEXT_PUBLIC_STB_URL || "http://localhost:4000";
+  const stbUrl = process.env.STB_URL;
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+
+  // Ambil list film dari STB
   const filmsRes = await fetch(`${stbUrl}/api/films`, { cache: "no-store" });
   const { films } = await filmsRes.json();
   const film = films.find((f) => f.id === id);
   if (!film) return null;
+
+  // Ambil metadata dari API route sendiri (yang sudah ada TMDB logic-nya)
   const metaRes = await fetch(
-    `${stbUrl}/api/metadata?title=${encodeURIComponent(film.title)}&year=${film.year || ""}`,
-    { cache: "force-cache" }
+    `${appUrl}/api/metadata?title=${encodeURIComponent(film.title)}&year=${film.year || ""}`,
+    { next: { revalidate: 86400 } }
   );
   const meta = await metaRes.json();
+
   return { ...film, ...(meta.found ? meta : {}) };
 }
 
