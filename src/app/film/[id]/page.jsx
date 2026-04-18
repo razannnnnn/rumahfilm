@@ -12,7 +12,7 @@ async function getFilmDetail(id) {
   const film = films.find((f) => f.id === id);
   if (!film) return null;
   const metaRes = await fetch(
-    `${baseUrl}/api/metadata?title=${encodeURIComponent(film.title)}&year=${film.year || ""}`,
+    `${stbUrl}/api/metadata?title=${encodeURIComponent(film.title)}&year=${film.year || ""}`,
     { cache: "force-cache" }
   );
   const meta = await metaRes.json();
