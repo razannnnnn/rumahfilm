@@ -1,7 +1,9 @@
 "use client";
 import { useEffect, useState, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import Sidebar from "@/components/Sidebar";
+import dynamic from "next/dynamic";
+
+const Sidebar = dynamic(() => import("@/components/Sidebar"), { ssr: false });
 
 const EXT_COLORS = {
   ".mkv": { bg: "#E6F1FB", color: "#185FA5" },
