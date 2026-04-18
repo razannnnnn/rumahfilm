@@ -1,7 +1,8 @@
 "use client";
+export const dynamic = "force-dynamic";
 import { useEffect, useState } from "react";
 import { motion } from "motion/react";
-import SidebarWrapper from "@/components/SidebarWrapper";
+import Sidebar from "@/components/Sidebar";
 
 function GaugeBar({ value, max = 100, color = "#86efac" }) {
   const percent = Math.min((value / max) * 100, 100);
