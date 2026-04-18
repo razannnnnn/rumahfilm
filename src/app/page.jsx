@@ -6,17 +6,25 @@ export const dynamic = "force-dynamic";
 
 async function getFilmsWithMetadata() {
   const stbUrl = process.env.NEXT_PUBLIC_STB_URL || "http://localhost:4000";
+  const vercelUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+  
+  console.log("STB URL:", stbUrl);
+  console.log("Vercel URL:", vercelUrl);
+  
   const filmsRes = await fetch(`${stbUrl}/api/films`, { cache: "no-store" });
   const { films } = await filmsRes.json();
+  
+  console.log("Films count:", films.length);
+  console.log("First film:", films[0]);
 
   const filmsWithMeta = await Promise.all(
     films.map(async (film) => {
       try {
-        const metaRes = await fetch(
-          `${baseUrl}/api/metadata?title=${encodeURIComponent(film.title)}&year=${film.year || ""}`,
-          { cache: "no-store" }
-        );
+        const metaUrl = `${vercelUrl}/api/metadata?title=${encodeURIComponent(film.title)}&year=${film.year || ""}`;
+        console.log("Fetching metadata:", metaUrl);
+        const metaRes = await fetch(metaUrl, { cache: "no-store" });
         const meta = await metaRes.json();
+        console.log("Meta result:", film.title, meta.found);
         return {
           ...film,
           poster: meta.found ? meta.poster : null,
@@ -25,8 +33,9 @@ async function getFilmsWithMetadata() {
           backdrop: meta.found ? meta.backdrop : null,
           genres: meta.found ? (meta.genres || []) : [],
         };
-      } catch {
-        return { ...film, poster: null, rating: null, overview: null, backdrop: null, genres: null, };
+      } catch (e) {
+        console.log("Meta error:", film.title, e.message);
+        return { ...film, poster: null, rating: null, overview: null, backdrop: null, genres: [] };
       }
     })
   );
