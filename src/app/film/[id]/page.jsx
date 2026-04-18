@@ -7,7 +7,7 @@ import Sidebar from "@/components/Sidebar";
 
 async function getFilmDetail(id) {
   const stbUrl = process.env.STB_URL;
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+  const appUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
 
   // Debug — hapus setelah fix
   console.log("STB_URL:", stbUrl);
