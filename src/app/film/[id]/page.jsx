@@ -1,7 +1,9 @@
-import SidebarWrapper from "@/components/SidebarWrapper";
 import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
+
+export const dynamic = "force-dynamic";
+import Sidebar from "@/components/Sidebar";
 
 async function getFilmDetail(id) {
   const stbUrl = process.env.NEXT_PUBLIC_STB_URL || "http://localhost:4000";

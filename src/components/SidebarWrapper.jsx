@@ -1,6 +1,5 @@
-import dynamic from "next/dynamic";
-
-const Sidebar = dynamic(() => import("@/components/Sidebar"), { ssr: false });
+"use client";
+import Sidebar from "@/components/Sidebar";
 
 export default function SidebarWrapper() {
   return <Sidebar />;

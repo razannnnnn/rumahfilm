@@ -1,6 +1,8 @@
 import HeroBanner from "@/components/HeroBanner";
-import SidebarWrapper from "@/components/SidebarWrapper";
 import FilmGrid from "@/components/FilmGrid";
+import Sidebar from "@/components/Sidebar";
+
+export const dynamic = "force-dynamic";
 
 async function getFilmsWithMetadata() {
   const stbUrl = process.env.NEXT_PUBLIC_STB_URL || "http://localhost:4000";
