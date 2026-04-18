@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import config from "../../../../config";
-import { getMetadataCache, setMetadataCache } from "@/lib/cache";
 
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
@@ -12,45 +11,31 @@ export async function GET(request) {
   }
 
   try {
-    // Cek cache dulu
-    const cached = getMetadataCache(title, year);
-    if (cached) {
-      return NextResponse.json({ ...cached, fromCache: true });
-    }
-
     const query = encodeURIComponent(title);
     const yearParam = year ? `&year=${year}` : "";
     const url = `${config.tmdbBaseUrl}/search/movie?api_key=${config.tmdbApiKey}&query=${query}${yearParam}&language=en-US`;
 
-    const res = await fetch(url);
+    const res = await fetch(url, {
+      next: { revalidate: 86400 } // cache 24 jam via Next.js cache
+    });
     const data = await res.json();
 
     if (!data.results || data.results.length === 0) {
-      const result = { found: false };
-      setMetadataCache(title, year, result); // cache juga kalau tidak ketemu
-      return NextResponse.json(result);
+      return NextResponse.json({ found: false });
     }
 
     const movie = data.results[0];
-    const result = {
-  found: true,
-  tmdbId: movie.id,
-  title: movie.title,
-  overview: movie.overview,
-  poster: movie.poster_path
-    ? `${config.tmdbImageBase}${movie.poster_path}`
-    : null,
-  backdrop: movie.backdrop_path
-    ? `https://image.tmdb.org/t/p/w1280${movie.backdrop_path}`
-    : null,
-  rating: movie.vote_average?.toFixed(1),
-  releaseDate: movie.release_date,
-  genres: (movie.genre_ids || []).map((id) => config.tmdbGenres[id]).filter(Boolean),
-};
-    // Simpan ke cache
-    setMetadataCache(title, year, result);
-
-    return NextResponse.json(result);
+    return NextResponse.json({
+      found: true,
+      tmdbId: movie.id,
+      title: movie.title,
+      overview: movie.overview,
+      poster: movie.poster_path ? `${config.tmdbImageBase}${movie.poster_path}` : null,
+      backdrop: movie.backdrop_path ? `https://image.tmdb.org/t/p/w1280${movie.backdrop_path}` : null,
+      rating: movie.vote_average?.toFixed(1),
+      releaseDate: movie.release_date,
+      genres: (movie.genre_ids || []).map((id) => config.tmdbGenres[id]).filter(Boolean),
+    });
   } catch (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
