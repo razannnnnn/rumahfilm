@@ -3,8 +3,8 @@ import Sidebar from "@/components/Sidebar";
 import FilmGrid from "@/components/FilmGrid";
 
 async function getFilmsWithMetadata() {
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
-  const filmsRes = await fetch(`${baseUrl}/api/films`, { cache: "no-store" });
+  const stbUrl = process.env.NEXT_PUBLIC_STB_URL || "http://localhost:4000";
+  const filmsRes = await fetch(`${stbUrl}/api/films`, { cache: "no-store" });
   const { films } = await filmsRes.json();
 
   const filmsWithMeta = await Promise.all(

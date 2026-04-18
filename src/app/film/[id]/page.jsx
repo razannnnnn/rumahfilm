@@ -4,8 +4,8 @@ import Image from "next/image";
 import { notFound } from "next/navigation";
 
 async function getFilmDetail(id) {
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
-  const filmsRes = await fetch(`${baseUrl}/api/films`, { cache: "no-store" });
+  const stbUrl = process.env.NEXT_PUBLIC_STB_URL || "http://localhost:4000";
+  const filmsRes = await fetch(`${stbUrl}/api/films`, { cache: "no-store" });
   const { films } = await filmsRes.json();
   const film = films.find((f) => f.id === id);
   if (!film) return null;

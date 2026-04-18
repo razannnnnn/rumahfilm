@@ -48,6 +48,14 @@ export default function VideoPlayer({ filmId, title }) {
   const [showVolumeSlider, setShowVolumeSlider] = useState(false);
   const [seeking, setSeeking] = useState(false);
 
+  const [showShortcutInfo, setShowShortcutInfo] = useState(false);
+  const [brightness, setBrightness] = useState(100);
+  const [showBrightnessSlider, setShowBrightnessSlider] = useState(false);
+
+  const [skipIndicator, setSkipIndicator] = useState(null); // 'forward' | 'backward'
+  const [volumeIndicator, setVolumeIndicator] = useState(null); // { level: 0-100 }
+  const volumeIndicatorTimer = useRef(null);
+
   const [showResumeToast, setShowResumeToast] = useState(false);
   const [resumeTime, setResumeTime] = useState(0);
   const saveProgressTimer = useRef(null);
@@ -58,7 +66,8 @@ export default function VideoPlayer({ filmId, title }) {
   const [subtitleEnabled, setSubtitleEnabled] = useState(true);
   const [subtitleAvailable, setSubtitleAvailable] = useState(false);
 
-  const streamUrl = `/api/stream/${filmId}`;
+  const stbUrl = process.env.NEXT_PUBLIC_STB_URL || "http://localhost:4000";
+  const streamUrl = `${stbUrl}/api/stream/${filmId}`;
 
   const formatTime = (s) => {
     if (!s || isNaN(s)) return "0:00";
@@ -89,11 +98,86 @@ export default function VideoPlayer({ filmId, title }) {
     return () => document.removeEventListener("fullscreenchange", handleFullscreenChange);
   }, []);
 
+  const showVolumeIndicator = (level) => {
+  setVolumeIndicator({ level: Math.round(level * 100) });
+  clearTimeout(volumeIndicatorTimer.current);
+  volumeIndicatorTimer.current = setTimeout(() => setVolumeIndicator(null), 1500);
+};
+
+  // Keyboard shortcut
+useEffect(() => {
+  const handleKeyDown = (e) => {
+    // Jangan aktif kalau user sedang ketik di input
+    if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") return;
+
+    switch (e.key) {
+      case " ":
+      case "k":
+        e.preventDefault();
+        togglePlay();
+        break;
+      case "ArrowLeft":
+        e.preventDefault();
+        skip(-10);
+        break;
+      case "ArrowRight":
+        e.preventDefault();
+        skip(10);
+        break;
+      case "ArrowUp":
+  e.preventDefault();
+  if (videoRef.current) {
+    const newVol = Math.min(1, volume + 0.1);
+    setVolume(newVol);
+    setMuted(false);
+    videoRef.current.volume = newVol;
+    videoRef.current.muted = false;
+    showVolumeIndicator(newVol); // ← tambahkan ini
+  }
+  break;
+case "ArrowDown":
+  e.preventDefault();
+  if (videoRef.current) {
+    const newVol = Math.max(0, volume - 0.1);
+    setVolume(newVol);
+    setMuted(newVol === 0);
+    videoRef.current.volume = newVol;
+    videoRef.current.muted = newVol === 0;
+    showVolumeIndicator(newVol); // ← tambahkan ini
+  }
+  break;
+      case "f":
+      case "F":
+        e.preventDefault();
+        toggleFullscreen();
+        break;
+      case "m":
+      case "M":
+        e.preventDefault();
+        toggleMute();
+        break;
+      case "c":
+      case "C":
+        e.preventDefault();
+        if (subtitleAvailable) setSubtitleEnabled((prev) => !prev);
+        break;
+      default:
+        break;
+      case "?":
+        setShowShortcutInfo((prev) => !prev);
+        break;
+    }
+  };
+
+  window.addEventListener("keydown", handleKeyDown);
+  return () => window.removeEventListener("keydown", handleKeyDown);
+}, [playing, volume, muted, subtitleAvailable, subtitleEnabled]);
+
   // Load & parse subtitle
   useEffect(() => {
     const loadSubtitle = async () => {
       try {
-        const res = await fetch(`/api/subtitle/${filmId}`);
+        const res = await fetch(`${process.env.NEXT_PUBLIC_STB_URL}/api/subtitle/${filmId}`);
         if (!res.ok) return;
         const text = await res.text();
         const cues = parseVtt(text);
@@ -197,12 +281,14 @@ useEffect(() => {
   };
 
   const skip = (seconds) => {
-    if (!videoRef.current) return;
-    videoRef.current.currentTime = Math.max(
-      0,
-      Math.min(videoRef.current.currentTime + seconds, duration)
-    );
-  };
+  if (!videoRef.current) return;
+  videoRef.current.currentTime = Math.max(
+    0,
+    Math.min(videoRef.current.currentTime + seconds, duration)
+  );
+  setSkipIndicator(seconds > 0 ? "forward" : "backward");
+  setTimeout(() => setSkipIndicator(null), 600);
+};
 
   const handleResume = () => {
   if (videoRef.current) {
@@ -230,16 +316,105 @@ const dismissResume = () => {
     >
       {/* Video */}
       <video
-        ref={videoRef}
-        src={streamUrl}
-        className="w-full h-full"
-        style={{ display: "block" }}
-        onTimeUpdate={handleTimeUpdate}
-        onLoadedMetadata={() => setDuration(videoRef.current?.duration || 0)}
-        onPlay={() => setPlaying(true)}
-        onPause={() => setPlaying(false)}
-        onClick={togglePlay}
-      />
+  ref={videoRef}
+  src={streamUrl}
+  className="w-full h-full"
+  style={{ display: "block", filter: `brightness(${brightness}%)` }}
+  onTimeUpdate={handleTimeUpdate}
+  onLoadedMetadata={() => setDuration(videoRef.current?.duration || 0)}
+  onPlay={() => setPlaying(true)}
+  onPause={() => setPlaying(false)}
+  onClick={togglePlay}
+/>
+      {/* Skip indicator */}
+<AnimatePresence>
+  {skipIndicator && (
+    <>
+      {skipIndicator === "backward" && (
+        <motion.div
+          key="backward"
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.2 }}
+          className="absolute left-10 top-1/2 -translate-y-1/2 flex flex-col items-center gap-1 pointer-events-none"
+        >
+          <div className="w-16 h-16 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center">
+            <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M9.195 18.44c1.25.714 2.805-.189 2.805-1.629v-2.34l6.945 3.968c1.25.715 2.805-.188 2.805-1.628V8.69c0-1.44-1.555-2.343-2.805-1.628L12 11.03v-2.34c0-1.44-1.555-2.343-2.805-1.628l-7.108 4.061c-1.26.72-1.26 2.536 0 3.256l7.108 4.061z" />
+            </svg>
+          </div>
+          <span className="text-white text-xs font-medium">-10 detik</span>
+        </motion.div>
+      )}
+      {skipIndicator === "forward" && (
+        <motion.div
+          key="forward"
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.2 }}
+          className="absolute right-10 top-1/2 -translate-y-1/2 flex flex-col items-center gap-1 pointer-events-none"
+        >
+          <div className="w-16 h-16 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center">
+            <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M5.055 7.06c-1.25-.714-2.805.189-2.805 1.628v8.123c0 1.44 1.555 2.342 2.805 1.628L12 14.471v2.34c0 1.44 1.555 2.342 2.805 1.628l7.108-4.061c1.26-.72 1.26-2.536 0-3.256L14.805 7.06C13.555 6.346 12 7.25 12 8.688v2.34L5.055 7.06z" />
+            </svg>
+          </div>
+          <span className="text-white text-xs font-medium">+10 detik</span>
+        </motion.div>
+      )}
+    </>
+  )}
+</AnimatePresence>
+
+{/* Volume indicator */}
+<AnimatePresence>
+  {volumeIndicator !== null && (
+    <motion.div
+      key="volume-indicator"
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.95 }}
+      transition={{ duration: 0.15 }}
+      className="absolute pointer-events-none z-50"
+      style={{
+        top: "24px",
+        left: "50%",
+        translateX: "-50%",
+      }}
+    >
+      <div className="flex items-center gap-2.5 px-4 py-2.5 rounded-xl bg-black/60 backdrop-blur-sm border border-white/10">
+        <svg className="w-5 h-5 text-white flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
+          {volumeIndicator.level === 0 ? (
+            <path d="M13.5 4.06c0-1.336-1.616-2.005-2.56-1.06l-4.5 4.5H4.508c-1.141 0-2.318.664-2.66 1.905A9.76 9.76 0 001.5 12c0 .898.121 1.768.35 2.595.341 1.24 1.518 1.905 2.659 1.905h1.93l4.5 4.5c.945.945 2.561.276 2.561-1.06V4.06zM17.78 9.22a.75.75 0 10-1.06 1.06L18.44 12l-1.72 1.72a.75.75 0 001.06 1.06l1.72-1.72 1.72 1.72a.75.75 0 101.06-1.06L20.56 12l1.72-1.72a.75.75 0 00-1.06-1.06l-1.72 1.72-1.72-1.72z" />
+          ) : volumeIndicator.level < 50 ? (
+            <path d="M13.5 4.06c0-1.336-1.616-2.005-2.56-1.06l-4.5 4.5H4.508c-1.141 0-2.318.664-2.66 1.905A9.76 9.76 0 001.5 12c0 .898.121 1.768.35 2.595.341 1.24 1.518 1.905 2.659 1.905h1.93l4.5 4.5c.945.945 2.561.276 2.561-1.06V4.06zM15.932 7.757a.75.75 0 011.061 0 6 6 0 010 8.486.75.75 0 01-1.06-1.061 4.5 4.5 0 000-6.364.75.75 0 010-1.06z" />
+          ) : (
+            <path d="M13.5 4.06c0-1.336-1.616-2.005-2.56-1.06l-4.5 4.5H4.508c-1.141 0-2.318.664-2.66 1.905A9.76 9.76 0 001.5 12c0 .898.121 1.768.35 2.595.341 1.24 1.518 1.905 2.659 1.905h1.93l4.5 4.5c.945.945 2.561.276 2.561-1.06V4.06zM18.584 5.106a.75.75 0 011.06 0c3.808 3.807 3.808 9.98 0 13.788a.75.75 0 01-1.06-1.06 8.25 8.25 0 000-11.668.75.75 0 010-1.06zM15.932 7.757a.75.75 0 011.061 0 6 6 0 010 8.486.75.75 0 01-1.06-1.061 4.5 4.5 0 000-6.364.75.75 0 010-1.06z" />
+          )}
+        </svg>
+        <div className="flex items-center gap-0.5">
+          {Array.from({ length: 10 }).map((_, i) => (
+            <div
+              key={i}
+              className="rounded-sm"
+              style={{
+                width: "4px",
+                height: `${8 + i * 2}px`,
+                background: (i + 1) * 10 <= volumeIndicator.level ? "#86efac" : "rgba(255,255,255,0.25)",
+                transition: "background 0.1s",
+              }}
+            />
+          ))}
+        </div>
+        <span className="text-white text-sm font-medium tabular-nums w-8 text-right">
+          {volumeIndicator.level}%
+        </span>
+      </div>
+    </motion.div>
+  )}
+</AnimatePresence>
 
       {/* Resume toast */}
 <AnimatePresence>
@@ -270,6 +445,55 @@ className="absolute top-4 right-4 z-50 flex items-center gap-3 px-4 py-2.5 round
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
         </svg>
       </button>
+    </motion.div>
+  )}
+</AnimatePresence>
+
+{/* Shortcut info popup */}
+<AnimatePresence>
+  {showShortcutInfo && (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.95 }}
+      transition={{ duration: 0.2 }}
+      className="absolute inset-0 flex items-center justify-center z-50 pointer-events-none"
+    >
+      <div className="bg-black/80 backdrop-blur-md border border-white/10 rounded-2xl p-6 pointer-events-auto"
+        style={{ minWidth: "280px" }}
+      >
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-white text-sm font-semibold">Keyboard Shortcut</h3>
+          <button
+            onClick={() => setShowShortcutInfo(false)}
+            className="text-white/40 hover:text-white transition-colors"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        <div className="flex flex-col gap-2.5">
+          {[
+            { key: "Space / K", desc: "Play / Pause" },
+            { key: "←", desc: "Mundur 10 detik" },
+            { key: "→", desc: "Maju 10 detik" },
+            { key: "↑", desc: "Volume naik" },
+            { key: "↓", desc: "Volume turun" },
+            { key: "F", desc: "Fullscreen" },
+            { key: "M", desc: "Mute / Unmute" },
+            { key: "C", desc: "Toggle subtitle" },
+            { key: "?", desc: "Tampilkan shortcut" },
+          ].map(({ key, desc }) => (
+            <div key={key} className="flex items-center justify-between gap-8">
+              <span className="text-white/50 text-xs">{desc}</span>
+              <kbd className="text-xs text-[#86efac] border border-[#86efac]/30 bg-[#86efac]/10 px-2 py-0.5 rounded font-mono">
+                {key}
+              </kbd>
+            </div>
+          ))}
+        </div>
+      </div>
     </motion.div>
   )}
 </AnimatePresence>
@@ -477,7 +701,55 @@ className="absolute top-4 right-4 z-50 flex items-center gap-3 px-4 py-2.5 round
                 </div>
 
                 {/* Right controls */}
+                
                 <div className="flex items-center gap-3">
+                  {/* Brightness */}
+<div
+  className="relative flex items-center"
+  onMouseEnter={() => setShowBrightnessSlider(true)}
+  onMouseLeave={() => setShowBrightnessSlider(false)}
+>
+  <button className="text-white/80 hover:text-white transition-colors">
+    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" />
+    </svg>
+  </button>
+  <AnimatePresence>
+    {showBrightnessSlider && (
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: 8 }}
+        transition={{ duration: 0.15 }}
+        className="absolute bottom-8 right-0 bg-black/70 backdrop-blur-sm border border-white/10 rounded-xl p-3 flex flex-col items-center gap-2"
+        style={{ width: "40px" }}
+      >
+        <span className="text-white/60 text-[10px]">{brightness}%</span>
+        <input
+          type="range"
+          min={30}
+          max={200}
+          step={5}
+          value={brightness}
+          onChange={(e) => setBrightness(parseInt(e.target.value))}
+          className="accent-[#86efac]"
+          style={{
+            writingMode: "vertical-lr",
+            direction: "rtl",
+            height: "80px",
+            width: "4px",
+          }}
+        />
+        <button
+          onClick={() => setBrightness(100)}
+          className="text-[10px] text-white/40 hover:text-white transition-colors"
+        >
+          Reset
+        </button>
+      </motion.div>
+    )}
+  </AnimatePresence>
+</div>
                   {/* CC toggle */}
                   {subtitleAvailable && (
                     <button
@@ -491,6 +763,13 @@ className="absolute top-4 right-4 z-50 flex items-center gap-3 px-4 py-2.5 round
                       CC
                     </button>
                   )}
+                  {/* Shortcut info */}
+<button
+  onClick={() => setShowShortcutInfo((prev) => !prev)}
+  className="text-white/80 hover:text-white transition-colors text-xs font-semibold w-5 h-5 rounded-full border border-white/30 flex items-center justify-center"
+>
+  ?
+</button>
 
                   {/* Fullscreen */}
                   <button onClick={toggleFullscreen} className="text-white/80 hover:text-white transition-colors">

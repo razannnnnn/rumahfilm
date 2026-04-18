@@ -3,8 +3,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 async function getFilm(id) {
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
-  const res = await fetch(`${baseUrl}/api/films`, { cache: "no-store" });
+  const stbUrl = process.env.NEXT_PUBLIC_STB_URL || "http://localhost:4000";
+  const res = await fetch(`${stbUrl}/api/films`, { cache: "no-store" });
   const { films } = await res.json();
   return films.find((f) => f.id === id) || null;
 }
