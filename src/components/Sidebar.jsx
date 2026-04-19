@@ -17,6 +17,15 @@ const navItems = [
       </svg>
     ),
   },
+  {
+    label: "Request Film",
+    href: "/request",
+    icon: (
+      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v6m3-3H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+    ),
+  },
 ];
 
 export default function Sidebar() {
@@ -130,6 +139,14 @@ export default function Sidebar() {
     <p className="text-[10px] font-medium text-gray-400 dark:text-gray-600 uppercase tracking-widest px-2 mb-2 mt-4">
       Admin
     </p>
+    <Link href="/admin/requests">
+      <div className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm mb-0.5 ...">
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 6.75h12M8.25 12h12m-12 5.25h12M3.75 6.75h.007v.008H3.75V6.75zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zM3.75 12h.007v.008H3.75V12zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm-.375 5.25h.007v.008H3.75v-.008zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+        </svg>
+        Kelola Request
+      </div>
+    </Link>
     <Link href="/monitor">
       <div className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm mb-0.5 transition-all duration-150 border border-transparent text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5">
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
@@ -147,7 +164,7 @@ export default function Sidebar() {
       </div>
     </Link>
   </>
-)}
+        )}
       </nav>
 
       {/* Dark mode toggle */}
@@ -193,7 +210,7 @@ export default function Sidebar() {
       {session && (
   <div className="px-5 pb-4 border-t border-gray-200 dark:border-white/[0.06] pt-3">
     <button
-      onClick={() => signOut({ callbackUrl: "/login" })}
+      onClick={() => signOut({ callbackUrl: "/" })}
       className="w-full flex items-center gap-2.5 text-sm text-red-400 hover:text-red-300 transition-colors"
     >
       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
