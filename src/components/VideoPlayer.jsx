@@ -1,6 +1,7 @@
 "use client";
 import { useRef, useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "motion/react";
+import { saveHistory, getFilmProgress } from "@/lib/history";
 
 function parseVtt(vttText) {
   const cues = [];
@@ -24,7 +25,7 @@ function parseVtt(vttText) {
   return cues;
 }
 
-export default function VideoPlayer({ filmId, title }) {
+export default function VideoPlayer({ filmId, title, poster }) {
   const videoRef = useRef(null);
   const containerRef = useRef(null);
   const hideTimer = useRef(null);
@@ -147,17 +148,26 @@ export default function VideoPlayer({ filmId, title }) {
     videoRef.current.currentTime = Math.max(0, Math.min(videoRef.current.currentTime + seconds, duration));
   };
 
-  const handleTimeUpdate = () => {
-    if (!videoRef.current || seeking) return;
-    const cur = videoRef.current.currentTime;
-    const dur = videoRef.current.duration;
-    setCurrentTime(cur);
-    setProgress((cur / dur) * 100 || 0);
-    if (videoRef.current.buffered.length > 0) {
-      const bufferedEnd = videoRef.current.buffered.end(videoRef.current.buffered.length - 1);
-      setBuffered((bufferedEnd / dur) * 100 || 0);
+const handleTimeUpdate = () => {
+  if (!videoRef.current || seeking) return;
+  const cur = videoRef.current.currentTime;
+  const dur = videoRef.current.duration;
+  setCurrentTime(cur);
+  setProgress((cur / dur) * 100 || 0);
+
+  if (videoRef.current.buffered.length > 0) {
+    const bufferedEnd = videoRef.current.buffered.end(videoRef.current.buffered.length - 1);
+    setBuffered((bufferedEnd / dur) * 100 || 0);
+  }
+
+  // Tambah/update bagian ini
+  clearTimeout(saveTimer.current);
+  saveTimer.current = setTimeout(() => {
+    if (cur > 5) {
+      saveHistory({ id: filmId, title, currentTime: cur, poster }); // ← tambah poster
     }
-  };
+  }, 10000);
+};
 
   const handleSeek = (e) => {
     if (!videoRef.current) return;

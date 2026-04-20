@@ -4,8 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import { useEffect, useState } from "react";
-
-
+import { getHistory, formatDuration } from "@/lib/history";
+import Image from "next/image";
 
 const navItems = [
   {
@@ -32,6 +32,7 @@ export default function Sidebar() {
   const pathname = usePathname();
   const [dark, setDark] = useState(false);
   const [open, setOpen] = useState(false);
+  const [history, setHistory] = useState([]);
 
   const { data: session } = useSession();
   const isAdmin = session?.user?.role === "admin";
@@ -40,10 +41,14 @@ export default function Sidebar() {
     setDark(document.documentElement.classList.contains("dark"));
   }, []);
 
-  // Tutup sidebar saat route berubah
   useEffect(() => {
     setOpen(false);
   }, [pathname]);
+
+  useEffect(() => {
+    const h = getHistory();
+    setHistory(h.slice(0, 5));
+  }, [pathname]); // refresh saat navigasi
 
   const toggleTheme = () => {
     const isDark = document.documentElement.classList.toggle("dark");
@@ -73,7 +78,6 @@ export default function Sidebar() {
         <Link href="/" className="text-base font-semibold tracking-tight">
           Rumah<span className="text-[#86efac]">Film</span>
         </Link>
-        {/* Tombol tutup — hanya di mobile */}
         <button
           onClick={() => setOpen(false)}
           className="md:hidden text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
@@ -100,6 +104,8 @@ export default function Sidebar() {
 
       {/* Nav */}
       <nav style={{ flex: 1, padding: "16px 12px", overflowY: "auto" }}>
+
+        {/* Menu utama */}
         <p
           className="text-gray-400 dark:text-gray-600 uppercase"
           style={{ fontSize: "10px", fontWeight: 500, letterSpacing: "0.1em", padding: "0 8px", marginBottom: "8px" }}
@@ -134,36 +140,99 @@ export default function Sidebar() {
             </Link>
           );
         })}
+
+        {/* Terakhir Ditonton */}
+        {history.length > 0 && (
+          <>
+            <p
+              className="text-gray-400 dark:text-gray-600 uppercase"
+              style={{ fontSize: "10px", fontWeight: 500, letterSpacing: "0.1em", padding: "0 8px", marginBottom: "8px", marginTop: "16px" }}
+            >
+              Terakhir Ditonton
+            </p>
+            {history.map((item) => (
+              <Link key={item.id} href={`/watch/${item.id}`}>
+                <div className="flex items-center gap-2.5 px-3 py-2 rounded-lg mb-0.5 hover:bg-gray-100 dark:hover:bg-white/5 transition-all duration-150 border border-transparent group">
+                  {/* Poster kecil */}
+                  <div
+                    className="relative flex-shrink-0 rounded-md overflow-hidden bg-gray-200 dark:bg-white/10"
+                    style={{ width: "28px", height: "40px" }}
+                  >
+                    {item.poster ? (
+                      <Image
+                        src={item.poster}
+                        alt={item.title}
+                        fill
+                        className="object-cover"
+                        sizes="28px"
+                      />
+                    ) : (
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <svg className="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15.75 10.5l4.72-4.72a.75.75 0 011.28.53v11.38a.75.75 0 01-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 002.25-2.25v-9a2.25 2.25 0 00-2.25-2.25h-9A2.25 2.25 0 002.25 7.5v9a2.25 2.25 0 002.25 2.25z" />
+                        </svg>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Info */}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-medium text-gray-700 dark:text-gray-300 truncate group-hover:text-gray-900 dark:group-hover:text-white transition-colors">
+                      {item.title}
+                    </p>
+                    <p className="text-[10px] text-gray-400 mt-0.5">
+                      {formatDuration(item.currentTime)}
+                    </p>
+                  </div>
+
+                  {/* Play icon */}
+                  <svg
+                    className="w-3 h-3 text-gray-300 dark:text-gray-600 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                    fill="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path fillRule="evenodd" d="M4.5 5.653c0-1.426 1.529-2.33 2.779-1.643l11.54 6.348c1.295.712 1.295 2.573 0 3.285L7.28 19.991c-1.25.687-2.779-.217-2.779-1.643V5.653z" clipRule="evenodd" />
+                  </svg>
+                </div>
+              </Link>
+            ))}
+          </>
+        )}
+
+        {/* Menu Admin */}
         {isAdmin && (
-  <>
-    <p className="text-[10px] font-medium text-gray-400 dark:text-gray-600 uppercase tracking-widest px-2 mb-2 mt-4">
-      Admin
-    </p>
-    <Link href="/admin/requests">
-      <div className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm mb-0.5 transition-all duration-150 border border-transparent text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5">
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 6.75h12M8.25 12h12m-12 5.25h12M3.75 6.75h.007v.008H3.75V6.75zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zM3.75 12h.007v.008H3.75V12zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm-.375 5.25h.007v.008H3.75v-.008zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
-        </svg>
-        Kelola Request
-      </div>
-    </Link>
-    <Link href="/monitor">
-      <div className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm mb-0.5 transition-all duration-150 border border-transparent text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5">
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
-        </svg>
-        Monitoring
-      </div>
-    </Link>
-    <Link href="/explorer">
-      <div className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm mb-0.5 transition-all duration-150 border border-transparent text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5">
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 9.776c.112-.017.227-.026.344-.026h15.812c.117 0 .232.009.344.026m-16.5 0a2.25 2.25 0 00-1.883 2.542l.857 6a2.25 2.25 0 002.227 1.932H19.05a2.25 2.25 0 002.227-1.932l.857-6a2.25 2.25 0 00-1.883-2.542m-16.5 0V6A2.25 2.25 0 016 3.75h3.879a1.5 1.5 0 011.06.44l2.122 2.12a1.5 1.5 0 001.06.44H18A2.25 2.25 0 0120.25 9v.776" />
-        </svg>
-        File Manager
-      </div>
-    </Link>
-  </>
+          <>
+            <p
+              className="text-gray-400 dark:text-gray-600 uppercase"
+              style={{ fontSize: "10px", fontWeight: 500, letterSpacing: "0.1em", padding: "0 8px", marginBottom: "8px", marginTop: "16px" }}
+            >
+              Admin
+            </p>
+            <Link href="/admin/requests">
+              <div className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm mb-0.5 transition-all duration-150 border border-transparent text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 6.75h12M8.25 12h12m-12 5.25h12M3.75 6.75h.007v.008H3.75V6.75zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zM3.75 12h.007v.008H3.75V12zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm-.375 5.25h.007v.008H3.75v-.008zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+                </svg>
+                Kelola Request
+              </div>
+            </Link>
+            <Link href="/monitor">
+              <div className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm mb-0.5 transition-all duration-150 border border-transparent text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
+                </svg>
+                Monitoring
+              </div>
+            </Link>
+            <Link href="/explorer">
+              <div className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm mb-0.5 transition-all duration-150 border border-transparent text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 9.776c.112-.017.227-.026.344-.026h15.812c.117 0 .232.009.344.026m-16.5 0a2.25 2.25 0 00-1.883 2.542l.857 6a2.25 2.25 0 002.227 1.932H19.05a2.25 2.25 0 002.227-1.932l.857-6a2.25 2.25 0 00-1.883-2.542m-16.5 0V6A2.25 2.25 0 016 3.75h3.879a1.5 1.5 0 011.06.44l2.122 2.12a1.5 1.5 0 001.06.44H18A2.25 2.25 0 0120.25 9v.776" />
+                </svg>
+                File Manager
+              </div>
+            </Link>
+          </>
         )}
       </nav>
 
@@ -207,25 +276,26 @@ export default function Sidebar() {
         </button>
       </div>
 
+      {/* Logout */}
       {session && (
-  <div className="px-5 pb-4 border-t border-gray-200 dark:border-white/[0.06] pt-3">
-    <button
-      onClick={() => signOut({ callbackUrl: "/" })}
-      className="w-full flex items-center gap-2.5 text-sm text-red-400 hover:text-red-300 transition-colors"
-    >
-      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
-      </svg>
-      Logout
-    </button>
-  </div>
-)}
+        <div className="px-5 pb-4 border-t border-gray-200 dark:border-white/[0.06] pt-3">
+          <button
+            onClick={() => signOut({ callbackUrl: "/" })}
+            className="w-full flex items-center gap-2.5 text-sm text-red-400 hover:text-red-300 transition-colors"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
+            </svg>
+            Logout
+          </button>
+        </div>
+      )}
     </motion.aside>
   );
 
   return (
     <>
-      {/* Tombol hamburger — hanya di mobile */}
+      {/* Tombol hamburger — mobile only */}
       <button
         onClick={() => setOpen(true)}
         className="md:hidden fixed top-4 left-4 z-40 w-9 h-9 rounded-lg bg-white dark:bg-[#18181b] border border-gray-200 dark:border-white/[0.06] flex items-center justify-center text-gray-500 dark:text-gray-400 shadow-sm"
@@ -235,16 +305,15 @@ export default function Sidebar() {
         </svg>
       </button>
 
-      {/* Desktop — sidebar biasa */}
+      {/* Desktop */}
       <div className="hidden md:block sticky top-0 h-screen flex-shrink-0">
         {sidebarContent}
       </div>
 
-      {/* Mobile — overlay + drawer */}
+      {/* Mobile drawer */}
       <AnimatePresence>
         {open && (
           <>
-            {/* Overlay */}
             <motion.div
               key="overlay"
               initial={{ opacity: 0 }}
@@ -253,7 +322,6 @@ export default function Sidebar() {
               onClick={() => setOpen(false)}
               className="md:hidden fixed inset-0 z-40 bg-black/50 backdrop-blur-sm"
             />
-            {/* Drawer */}
             <motion.div
               key="drawer"
               initial={{ x: "-100%" }}
