@@ -2,6 +2,7 @@
 import { useRef, useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { saveHistory, getFilmProgress } from "@/lib/history";
+import { useSearchParams } from "next/navigation";
 
 function parseVtt(vttText) {
   const cues = [];
@@ -31,6 +32,7 @@ export default function VideoPlayer({ filmId, title, poster }) {
   const hideTimer = useRef(null);
   const tapTimer = useRef(null);
   const tapCount = useRef(0);
+  const saveTimer = useRef(null);
 
   const [playing, setPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -53,6 +55,9 @@ export default function VideoPlayer({ filmId, title, poster }) {
 
   const stbUrl = process.env.NEXT_PUBLIC_STB_URL || "http://localhost:4000";
   const streamUrl = `${stbUrl}/api/stream/${filmId}`;
+
+  const searchParams = useSearchParams();
+  const startTime = parseInt(searchParams.get("t") || "0");
 
   const formatTime = (s) => {
     if (!s || isNaN(s)) return "0:00";
@@ -248,7 +253,14 @@ const handleTimeUpdate = () => {
         className="w-full h-full"
         style={{ display: "block" }}
         onTimeUpdate={handleTimeUpdate}
-        onLoadedMetadata={() => setDuration(videoRef.current?.duration || 0)}
+        onLoadedMetadata={() => {
+          const dur = videoRef.current?.duration || 0;
+          setDuration(dur);
+          // Auto seek ke waktu dari history
+          if (startTime > 0 && videoRef.current) {
+            videoRef.current.currentTime = startTime;
+          }
+        }}
         onPlay={() => setPlaying(true)}
         onPause={() => setPlaying(false)}
       />

@@ -4,8 +4,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import { useEffect, useState } from "react";
-import { getHistory, formatDuration } from "@/lib/history";
-import Image from "next/image";
 
 const navItems = [
   {
@@ -26,13 +24,21 @@ const navItems = [
       </svg>
     ),
   },
+  {
+    label: "Riwayat",
+    href: "/history",
+    icon: (
+      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+    ),
+  },
 ];
 
 export default function Sidebar() {
   const pathname = usePathname();
   const [dark, setDark] = useState(false);
   const [open, setOpen] = useState(false);
-  const [history, setHistory] = useState([]);
 
   const { data: session } = useSession();
   const isAdmin = session?.user?.role === "admin";
@@ -45,10 +51,6 @@ export default function Sidebar() {
     setOpen(false);
   }, [pathname]);
 
-  useEffect(() => {
-    const h = getHistory();
-    setHistory(h.slice(0, 5));
-  }, [pathname]); // refresh saat navigasi
 
   const toggleTheme = () => {
     const isDark = document.documentElement.classList.toggle("dark");
@@ -141,64 +143,6 @@ export default function Sidebar() {
           );
         })}
 
-        {/* Terakhir Ditonton */}
-        {history.length > 0 && (
-          <>
-            <p
-              className="text-gray-400 dark:text-gray-600 uppercase"
-              style={{ fontSize: "10px", fontWeight: 500, letterSpacing: "0.1em", padding: "0 8px", marginBottom: "8px", marginTop: "16px" }}
-            >
-              Terakhir Ditonton
-            </p>
-            {history.map((item) => (
-              <Link key={item.id} href={`/watch/${item.id}`}>
-                <div className="flex items-center gap-2.5 px-3 py-2 rounded-lg mb-0.5 hover:bg-gray-100 dark:hover:bg-white/5 transition-all duration-150 border border-transparent group">
-                  {/* Poster kecil */}
-                  <div
-                    className="relative flex-shrink-0 rounded-md overflow-hidden bg-gray-200 dark:bg-white/10"
-                    style={{ width: "28px", height: "40px" }}
-                  >
-                    {item.poster ? (
-                      <Image
-                        src={item.poster}
-                        alt={item.title}
-                        fill
-                        className="object-cover"
-                        sizes="28px"
-                      />
-                    ) : (
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <svg className="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15.75 10.5l4.72-4.72a.75.75 0 011.28.53v11.38a.75.75 0 01-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 002.25-2.25v-9a2.25 2.25 0 00-2.25-2.25h-9A2.25 2.25 0 002.25 7.5v9a2.25 2.25 0 002.25 2.25z" />
-                        </svg>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Info */}
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs font-medium text-gray-700 dark:text-gray-300 truncate group-hover:text-gray-900 dark:group-hover:text-white transition-colors">
-                      {item.title}
-                    </p>
-                    <p className="text-[10px] text-gray-400 mt-0.5">
-                      {formatDuration(item.currentTime)}
-                    </p>
-                  </div>
-
-                  {/* Play icon */}
-                  <svg
-                    className="w-3 h-3 text-gray-300 dark:text-gray-600 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                    fill="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path fillRule="evenodd" d="M4.5 5.653c0-1.426 1.529-2.33 2.779-1.643l11.54 6.348c1.295.712 1.295 2.573 0 3.285L7.28 19.991c-1.25.687-2.779-.217-2.779-1.643V5.653z" clipRule="evenodd" />
-                  </svg>
-                </div>
-              </Link>
-            ))}
-          </>
-        )}
-
         {/* Menu Admin */}
         {isAdmin && (
           <>
@@ -232,6 +176,7 @@ export default function Sidebar() {
                 File Manager
               </div>
             </Link>
+
           </>
         )}
       </nav>
