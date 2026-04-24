@@ -1,10 +1,9 @@
 import { getToken } from "next-auth/jwt";
 import { NextResponse } from "next/server";
 
-// Simple in-memory rate limiter
 const rateLimit = new Map();
-const RATE_LIMIT = 100; // max request
-const RATE_WINDOW = 60 * 1000; // per 1 menit
+const RATE_LIMIT = 100;
+const RATE_WINDOW = 60 * 1000;
 
 function isRateLimited(ip) {
   const now = Date.now();
@@ -28,10 +27,10 @@ function isRateLimited(ip) {
   return false;
 }
 
-export async function middleware(req) {
+export async function proxy(req) {
   const { pathname } = req.nextUrl;
 
-  // Rate limiting untuk API routes
+  // Rate limiting
   if (pathname.startsWith("/api/")) {
     const ip =
       req.headers.get("x-forwarded-for")?.split(",")[0] ||
@@ -49,7 +48,7 @@ export async function middleware(req) {
     }
   }
 
-  // Auth check untuk admin routes
+  // Auth check
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
 
   const isAdminRoute =

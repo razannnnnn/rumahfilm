@@ -40,7 +40,7 @@ export default function STBStatus() {
         <div className="flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse flex-shrink-0"></span>
           <p className="text-xs text-amber-500 font-medium">
-            STB tidak dapat dijangkau — film tidak dapat diputar saat ini
+            Server tidak dapat dijangkau — film mungkin tidak dapat diputar saat ini
           </p>
         </div>
         <button
