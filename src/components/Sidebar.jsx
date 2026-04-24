@@ -33,6 +33,15 @@ const navItems = [
       </svg>
     ),
   },
+  {
+  label: "Credit",
+  href: "/about",
+  icon: (
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+    </svg>
+  ),
+},
 ];
 
 export default function Sidebar() {
@@ -88,20 +97,6 @@ export default function Sidebar() {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
-      </div>
-
-      {/* Status */}
-      <div
-        className="border-b border-gray-200 dark:border-white/[0.06]"
-        style={{ padding: "12px 20px", flexShrink: 0 }}
-      >
-        <div className="flex items-center gap-2 text-xs text-gray-400">
-          <span
-            className="bg-[#86efac]"
-            style={{ width: "6px", height: "6px", borderRadius: "50%", display: "inline-block" }}
-          />
-          LAN Server aktif
-        </div>
       </div>
 
       {/* Nav */}
