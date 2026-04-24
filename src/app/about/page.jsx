@@ -36,7 +36,7 @@ export default function AboutPage() {
 
             {/* About */}
             <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed mb-5">
-              RumahFilm adalah media server lokal pribadi yang saya bangun dari nol untuk menikmati koleksi film di hardisk dari perangkat manapun di jaringan rumah — bahkan dari internet.
+              RumahFilm adalah platform streaming film yang saya bangun dari nol untuk menikmati koleksi film di hardisk dari perangkat manapun di jaringan rumah — bahkan dari internet.
             </p>
 
             {/* Tech stack */}
@@ -105,7 +105,7 @@ export default function AboutPage() {
             transition={{ duration: 0.4, delay: 0.2 }}
             className="text-center text-xs text-gray-300 dark:text-gray-700"
           >
-            RumahFilm — Dibuat dengan ❤️ di Blitar
+            RumahFilm — Dibuat dengan ❤️ oleh Razan
           </motion.p>
 
         </div>
