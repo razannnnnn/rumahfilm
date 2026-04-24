@@ -1,6 +1,7 @@
 import { Geist } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
+import STBStatus from "@/components/STBStatus";
 
 const geist = Geist({ subsets: ["latin"] });
 
@@ -35,6 +36,7 @@ export default function RootLayout({ children }) {
       </head>
       <body className={`${geist.className} bg-gray-50 dark:bg-[#111113] text-gray-900 dark:text-gray-100 antialiased`}>
         <Providers>
+          <STBStatus />
           {children}
         </Providers>
       </body>
