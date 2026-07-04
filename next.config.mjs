@@ -6,10 +6,10 @@ const nextConfig = {
         protocol: "https",
         hostname: "image.tmdb.org",
       },
-      { protocol: "http", hostname: "stb.razan.web.id" },
+      { protocol: "https", hostname: "api-rumahfilm.razn.my.id" },
     ],
   },
-  allowedDevOrigins: ['192.168.1.23'],
+  allowedDevOrigins: ["192.168.1.23", "192.168.1.10"],
 };
 
 export default nextConfig;

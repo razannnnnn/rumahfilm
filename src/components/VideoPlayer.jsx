@@ -87,7 +87,7 @@ export default function VideoPlayer({ filmId, title, poster }) {
   useEffect(() => {
     const loadSubtitle = async () => {
       try {
-        const res = await fetch(`${stbUrl}/api/subtitle/${filmId}`);
+        const res = await fetch(`/api/subtitle/${filmId}`);
         if (!res.ok) return;
         const text = await res.text();
         const cues = parseVtt(text);
