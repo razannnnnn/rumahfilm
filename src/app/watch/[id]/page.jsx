@@ -3,10 +3,10 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 async function getFilm(id) {
-  const stbUrl = process.env.NEXT_PUBLIC_STB_URL || "http://localhost:4000";
+  const serverUrl = process.env.NEXT_PUBLIC_STB_URL || "http://localhost:4000";
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
 
-  const res = await fetch(`${stbUrl}/api/films`, { cache: "no-store" });
+  const res = await fetch(`${serverUrl}/api/films`, { cache: "no-store" });
   const { films } = await res.json();
   const film = films.find((f) => f.id === id) || null;
   if (!film) return null;

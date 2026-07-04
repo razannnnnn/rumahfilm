@@ -7,7 +7,7 @@ export default function Error({ error, reset }) {
     console.error(error);
   }, [error]);
 
-  const isSTBOffline =
+  const isServerOffline =
     error?.message?.includes("fetch failed") ||
     error?.message?.includes("ECONNREFUSED") ||
     error?.message?.includes("network") ||
@@ -19,7 +19,7 @@ export default function Error({ error, reset }) {
 
         {/* Icon */}
         <div className="w-16 h-16 rounded-2xl bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/[0.06] flex items-center justify-center mx-auto mb-4">
-          {isSTBOffline ? (
+          {isServerOffline ? (
             <svg className="w-8 h-8 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5.636 5.636a9 9 0 1012.728 12.728M5.636 5.636A9 9 0 0118.364 18.364M5.636 5.636L18.364 18.364" />
             </svg>
@@ -32,24 +32,24 @@ export default function Error({ error, reset }) {
 
         {/* Title */}
         <h1 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-          {isSTBOffline ? "STB Tidak Dapat Dijangkau" : "Terjadi Kesalahan"}
+          {isServerOffline ? "Server Tidak Dapat Dijangkau" : "Terjadi Kesalahan"}
         </h1>
 
         {/* Description */}
         <p className="text-sm text-gray-400 mb-2">
-          {isSTBOffline
-            ? "Server film di rumah tidak merespons. Pastikan STB menyala dan terhubung ke internet."
+          {isServerOffline
+            ? "Server film di rumah tidak merespons. Pastikan server menyala dan terhubung ke internet."
             : "Terjadi kesalahan yang tidak terduga. Coba refresh halaman."}
         </p>
 
-        {/* STB checklist */}
-        {isSTBOffline && (
+        {/* Server checklist */}
+        {isServerOffline && (
           <div className="bg-amber-400/5 border border-amber-400/20 rounded-xl p-4 mb-6 text-left">
             <p className="text-xs font-medium text-amber-500 mb-2">Cek hal berikut:</p>
             <ul className="text-xs text-gray-400 space-y-1.5">
               <li className="flex items-center gap-2">
                 <span className="w-1.5 h-1.5 rounded-full bg-amber-400 flex-shrink-0"></span>
-                STB HG680P menyala
+                Server menyala
               </li>
               <li className="flex items-center gap-2">
                 <span className="w-1.5 h-1.5 rounded-full bg-amber-400 flex-shrink-0"></span>

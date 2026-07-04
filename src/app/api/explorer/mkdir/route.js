@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 export async function POST(request) {
   try {
     const body = await request.json();
-    const res = await fetch(`${process.env.STB_URL}/api/files/mkdir`, {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_STB_URL}/api/files/mkdir`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),

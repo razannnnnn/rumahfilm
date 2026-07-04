@@ -1,10 +1,10 @@
 # 🎬 RumahFilm
 
-Personal media server lokal yang dibangun dengan Next.js — streaming film dari hardisk langsung ke browser di jaringan LAN rumah.
+Personal media server lokal — streaming film dari server langsung ke browser di jaringan LAN rumah.
 
-![Next.js](https://img.shields.io/badge/Next.js-15-black?style=flat-square&logo=next.js)
+![Next.js](https://img.shields.io/badge/Next.js-16-black?style=flat-square&logo=next.js)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind-v3-38bdf8?style=flat-square&logo=tailwindcss)
-![Framer Motion](https://img.shields.io/badge/Framer_Motion-latest-purple?style=flat-square)
+![Motion](https://img.shields.io/badge/Motion-latest-purple?style=flat-square)
 ![TMDB](https://img.shields.io/badge/TMDB-API-01b4e4?style=flat-square)
 
 ---
@@ -13,7 +13,7 @@ Personal media server lokal yang dibangun dengan Next.js — streaming film dari
 
 - 🎥 **Streaming video** — support MP4, MKV, AVI, MOV, dan format lainnya via HTTP range request
 - 🖼️ **Metadata otomatis** — poster, backdrop, rating, overview, dan genre dari TMDB API
-- 🎞️ **Hero banner carousel** — auto-slide dengan animasi Framer Motion
+- 🎞️ **Hero banner carousel** — auto-slide dengan animasi Motion
 - 🔍 **Search & filter genre** — cari film dan filter berdasarkan genre
 - 📝 **Subtitle otomatis** — baca file `.srt` dan konversi ke VTT untuk ditampilkan di player
 - ▶️ **Custom video player** — play/pause, skip ±10s, volume, fullscreen, subtitle toggle, brightness
@@ -21,27 +21,29 @@ Personal media server lokal yang dibangun dengan Next.js — streaming film dari
 - 📍 **Progress nonton** — simpan posisi terakhir per film, resume otomatis
 - 🕐 **Riwayat tontonan** — history film yang pernah ditonton
 - 📁 **File explorer** — browse, upload, rename, download, dan hapus file dari browser
-- 📊 **Monitor STB** — pantau CPU, RAM, suhu, storage, dan IP STB secara realtime
+- 📊 **Monitor server** — pantau CPU, RAM, suhu, storage, dan IP server secara realtime
 - 🌙 **Dark / Light mode** — toggle tema dengan animasi smooth
 - 📱 **Responsive** — sidebar drawer di mobile, layout menyesuaikan semua ukuran layar
-- 🔐 **Auth** — proteksi halaman admin dengan NextAuth.js
+- 🔐 **Auth** — proteksi halaman admin dengan NextAuth.js (Credentials)
+- 📬 **Request film** — form request film (terintegrasi Google Sheets)
+- ✅ **Admin approve request** — kelola request film, ubah status, dan catatan
 
 ---
 
 ## 🏗️ Arsitektur
 
 ```
-┌─────────────────────────┐          ┌───────────────────────┐
-│   Vercel (Frontend)     │ ──────▶  │  STB HG680P (Backend) │
-│   Next.js App           │          │   Express.js API      │
-│   rumahfilm.vercel.app  │          │   stb.razan.web.id    │
-└─────────────────────────┘          └───────────────────────┘
-                                          │
-                                          ▼
-                                 ┌──────────────────────┐
-                                 │  Hardisk Eksternal   │
-                                 │  /mnt/harddisk/Film  │
-                                 └──────────────────────┘
+┌──────────────────────────┐       ┌──────────────────────────┐
+│   Frontend (Next.js)     │ ────▶ │   Server (Express.js)    │
+│   Local / Vercel         │       │   api-rumahfilm.razn.my.id│
+│   Browser LAN            │       │   STB HG680P / VPS       │
+└──────────────────────────┘       └──────────────────────────┘
+                                           │
+                                           ▼
+                                  ┌──────────────────────┐
+                                  │   Hardisk Eksternal  │
+                                  │   /mnt/harddisk/Film │
+                                  └──────────────────────┘
 ```
 
 ---
@@ -50,14 +52,15 @@ Personal media server lokal yang dibangun dengan Next.js — streaming film dari
 
 | Bagian | Teknologi |
 |--------|-----------|
-| Framework | Next.js 15 (App Router) |
+| Framework | Next.js 16 (App Router) |
 | Styling | Tailwind CSS v3 |
-| Animasi | Framer Motion |
+| Animasi | Motion |
 | Metadata | TMDB API v3 |
-| Auth | NextAuth.js |
-| Backend STB | Express.js |
-| Deploy Frontend | Vercel |
-| Deploy Backend | PM2 di STB HG680P (Armbian) |
+| Auth | NextAuth.js (Credentials Provider) |
+| Database Request | Google Sheets API |
+| Backend Server | Express.js |
+| Streaming | HTTP Range Request |
+| Server OS | Armbian Linux (ARM64) |
 
 ---
 
@@ -66,92 +69,130 @@ Personal media server lokal yang dibangun dengan Next.js — streaming film dari
 ```
 rumahfilm/
 ├── src/
-│   └── app/
-│       ├── layout.jsx
-│       ├── page.jsx                  ← Home (hero carousel + grid film)
-│       ├── film/[id]/page.jsx        ← Detail film
-│       ├── watch/[id]/page.jsx       ← Video player
-│       ├── history/page.jsx          ← Riwayat tontonan
-│       ├── explorer/page.jsx         ← File explorer
-│       ├── monitor/page.jsx          ← Monitor STB
-│       └── api/
-│           ├── films/route.js        ← Proxy ke STB
-│           ├── stream/[id]/route.js  ← Proxy stream video
-│           ├── metadata/route.js     ← Fetch TMDB
-│           ├── subtitle/[id]/route.js← Proxy subtitle
-│           ├── explorer/route.js     ← Proxy file explorer
-│           ├── system/route.js       ← Proxy monitor STB
-│           └── auth/                 ← NextAuth handler
-├── src/components/
-│   ├── Sidebar.jsx                   ← Navigasi + dark mode toggle
-│   ├── FilmCard.jsx                  ← Card poster film
-│   ├── FilmGrid.jsx                  ← Grid + search + filter genre
-│   ├── HeroBanner.jsx                ← Carousel hero banner
-│   └── VideoPlayer.jsx               ← Custom video player
+│   ├── app/
+│   │   ├── layout.jsx                  ← Root layout + providers
+│   │   ├── page.jsx                    ← Home (hero carousel + grid film)
+│   │   ├── loading.jsx                 ← Global loading spinner
+│   │   ├── error.jsx                   ← Global error (STB offline detect)
+│   │   ├── not-found.jsx               ← 404 page
+│   │   ├── globals.css                 ← Tailwind + custom scrollbar
+│   │   ├── providers.jsx               ← ThemeProvider wrapper
+│   │   │
+│   │   ├── film/[id]/page.jsx          ← Detail film + metadata TMDB
+│   │   ├── watch/[id]/page.jsx         ← Video player streaming
+│   │   ├── history/page.jsx            ← Riwayat tontonan
+│   │   ├── explorer/page.jsx           ← File explorer browser
+│   │   ├── monitor/page.jsx            ← Monitor server realtime
+│   │   ├── login/page.jsx              ← Halaman login admin
+│   │   ├── about/page.jsx              ← Halaman tentang
+│   │   ├── request/page.jsx            ← Form request film
+│   │   ├── admin/requests/page.jsx     ← Admin kelola request film
+│   │   │
+│   │   └── api/
+│   │       ├── auth/[...nextauth]/     ← NextAuth handler
+│   │       ├── films/route.js          ← Proxy daftar film dari server
+│   │       ├── stream/[id]/route.js    ← Proxy stream video
+│   │       ├── subtitle/[id]/route.js  ← Proxy subtitle
+│   │       ├── metadata/route.js       ← Fetch metadata dari TMDB
+│   │       ├── system/route.js         ← Proxy monitor server
+│   │       ├── explorer/               ← CRUD file (read, delete, mkdir,
+│   │       │                              rename, edit/upload, download)
+│   │       └── requests/               ← CRUD request film (Google Sheets)
+│   │
+│   └── components/
+│       ├── Sidebar.jsx                 ← Navigasi sidebar + dark mode toggle
+│       ├── SidebarWrapper.jsx          ← Wrapper sidebar + overlay mobile
+│       ├── Navbar.jsx                  ← Top navbar mobile
+│       ├── FilmCard.jsx                ← Card poster film
+│       ├── FilmGrid.jsx                ← Grid + search + filter genre
+│       ├── HeroBanner.jsx              ← Carousel hero banner motion
+│       ├── VideoPlayer.jsx             ← Custom video player
+│       ├── STBStatus.jsx               ← Status koneksi server
+│       └── PageLoadingSpinner.jsx      ← Loading spinner
+│
 ├── src/lib/
-│   ├── cache.js                      ← Cache metadata ke file JSON
-│   └── history.js                    ← Riwayat tontonan (localStorage)
-├── server.js                         ← Express backend untuk STB
-└── config.js                         ← Konfigurasi path & TMDB key
+│   ├── cache.js                        ← Cache metadata ke file JSON
+│   ├── history.js                      ← Riwayat tontonan (localStorage)
+│   └── googleSheets.js                 ← Google Sheets API client
+│
+├── src/proxy.js                        ← Middleware (auth + rate limiting)
+├── server.js                           ← Express backend
+├── config.js                           ← Konfigurasi path & TMDB key
+└── .env.local                          ← Environment variables
 ```
 
 ---
 
-## 🚀 Instalasi
+## 🚀 Instalasi & Setup
 
 ### Prerequisites
 - Node.js v20+
-- FFmpeg (untuk subtitle)
-- PM2 (untuk deploy di STB)
+- FFmpeg (untuk konversi subtitle .srt ke .vtt)
+- NPM / PNPM
 
-### Frontend (Vercel)
+### 1. Clone & Install
 
 ```bash
 git clone https://github.com/razannnnnn/rumahfilm.git
 cd rumahfilm
 npm install
 ```
+
+### 2. Environment Variables
 
 Buat file `.env.local`:
+
 ```env
+# TMDB
 TMDB_API_KEY=your_tmdb_api_key
-NEXT_PUBLIC_BASE_URL=https://rumahfilm.vercel.app
-NEXT_PUBLIC_STB_URL=https://your-stb-domain.com
-NEXTAUTH_SECRET=your_secret
-NEXTAUTH_URL=https://rumahfilm.vercel.app
+
+# Backend server
+STB_URL=https://api-rumahfilm.razn.my.id
+NEXT_PUBLIC_STB_URL=https://api-rumahfilm.razn.my.id
+
+# NextAuth
+NEXTAUTH_SECRET=generate_random_secret
+NEXTAUTH_URL=http://localhost:3000
+NEXT_PUBLIC_BASE_URL=http://localhost:3000
+
+# Admin credentials
+ADMIN_USERNAME=admin
+ADMIN_PASSWORD=your_password
+
+# Backend STB config
+FILM_PATH=/home/razan/film
+
+# Google Sheets (opsional — untuk fitur request film)
+GOOGLE_SERVICE_ACCOUNT_EMAIL=your-service-account@.gserviceaccount.com
+GOOGLE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----"
+GOOGLE_SPREADSHEET_ID=your_spreadsheet_id
 ```
 
-Deploy ke Vercel:
-```bash
-vercel deploy
-```
-
-### Backend STB (Armbian)
-
-```bash
-git clone https://github.com/razannnnnn/rumahfilm.git
-cd rumahfilm
-npm install
-
-# Buat .env
-echo "FILMS_PATH=/mnt/harddisk/Film" > .env
-echo "ALLOWED_ORIGIN=https://rumahfilm.vercel.app" >> .env
-echo "PORT=4000" >> .env
-
-# Jalankan dengan PM2
-pm2 start server.js --name "rumahfilm-api"
-pm2 startup && pm2 save
-```
-
-### Mount hardisk eksternal
+### 3. Jalankan Development
 
 ```bash
-sudo mkdir -p /mnt/harddisk
-sudo mount /dev/sdb1 /mnt/harddisk
-
-# Auto-mount saat boot
-echo "/dev/sdb1  /mnt/harddisk  ntfs  defaults,nofail  0  0" | sudo tee -a /etc/fstab
+npm run dev
 ```
+
+Buka `http://localhost:3000`.
+
+### 4. Build & Deploy
+
+```bash
+npm run build
+npm start
+```
+
+---
+
+## 🔐 Admin Credentials
+
+Login di `/login` dengan credentials yang diset di `.env.local`:
+
+| Variable | Default |
+|----------|---------|
+| `ADMIN_USERNAME` | `admin` |
+| `ADMIN_PASSWORD` | _(terserah kamu)_ |
 
 ---
 
@@ -193,7 +234,7 @@ Sully (2016).srt
 
 ---
 
-## 🖥️ Hardware
+## 🖥️ Spesifikasi Server
 
 | Komponen | Spesifikasi |
 |----------|-------------|
@@ -204,9 +245,22 @@ Sully (2016).srt
 
 ---
 
-## 📸 Screenshot
+## 🌐 Environment Variables Reference
 
-> Coming soon
+| Variable | Wajib | Deskripsi |
+|----------|-------|-----------|
+| `TMDB_API_KEY` | ✅ | API key dari themoviedb.org |
+| `STB_URL` | ✅ | URL backend server (tanpa `NEXT_PUBLIC_`) |
+| `NEXT_PUBLIC_STB_URL` | ✅ | URL backend server (client-side) |
+| `NEXTAUTH_SECRET` | ✅ | Secret untuk JWT token |
+| `NEXTAUTH_URL` | ✅ | URL frontend untuk NextAuth |
+| `NEXT_PUBLIC_BASE_URL` | ✅ | Base URL frontend |
+| `ADMIN_USERNAME` | ✅ | Username login admin |
+| `ADMIN_PASSWORD` | ✅ | Password login admin |
+| `FILM_PATH` | ✅ | Path folder film di backend server |
+| `GOOGLE_SERVICE_ACCOUNT_EMAIL` | ❌ | Untuk fitur request via Google Sheets |
+| `GOOGLE_PRIVATE_KEY` | ❌ | Private key service account |
+| `GOOGLE_SPREADSHEET_ID` | ❌ | ID spreadsheet Google Sheets |
 
 ---
 

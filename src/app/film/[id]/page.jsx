@@ -6,31 +6,21 @@ export const dynamic = "force-dynamic";
 import Sidebar from "@/components/Sidebar";
 
 async function getFilmDetail(id) {
-  const stbUrl = process.env.STB_URL;
+  const serverUrl = process.env.NEXT_PUBLIC_STB_URL || "http://localhost:4000";
   const appUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
 
-  // Debug — hapus setelah fix
-  console.log("STB_URL:", stbUrl);
-  console.log("APP_URL:", appUrl);
-
-  if (!stbUrl) {
-    throw new Error("STB_URL tidak di-set di environment variables");
+  if (!serverUrl) {
+    throw new Error("NEXT_PUBLIC_STB_URL tidak di-set di environment variables");
   }
 
-  const filmsRes = await fetch(`${stbUrl}/api/films`, { cache: "no-store" });
-
-  // Debug response
-  console.log("Films status:", filmsRes.status);
-  console.log("Films content-type:", filmsRes.headers.get("content-type"));
+  const filmsRes = await fetch(`${serverUrl}/api/films`, { cache: "no-store" });
 
   if (!filmsRes.ok) {
     throw new Error(`Gagal fetch films: ${filmsRes.status}`);
   }
 
-  const text = await filmsRes.text(); // baca sebagai text dulu
-  console.log("Films response preview:", text.slice(0, 100));
-
-  const { films } = JSON.parse(text); // baru parse manual
+  const text = await filmsRes.text();
+  const { films } = JSON.parse(text);
   const film = films.find((f) => f.id === id);
   if (!film) return null;
 
@@ -38,8 +28,6 @@ async function getFilmDetail(id) {
     `${appUrl}/api/metadata?title=${encodeURIComponent(film.title)}&year=${film.year || ""}`,
     { next: { revalidate: 86400 } }
   );
-
-  console.log("Meta status:", metaRes.status);
 
   const meta = await metaRes.json();
   return { ...film, ...(meta.found ? meta : {}) };

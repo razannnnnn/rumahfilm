@@ -28,8 +28,6 @@ export default function FilmGrid({ films }) {
     return matchQuery && matchGenre;
   });
 
-  console.log("films genres:", films.map(f => ({ title: f.title, genres: f.genres })));
-
   return (
     <div style={{ padding: "24px 32px" }}>
       {/* Header + Search */}

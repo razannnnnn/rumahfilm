@@ -53,8 +53,8 @@ export default function VideoPlayer({ filmId, title, poster }) {
   const [subtitleEnabled, setSubtitleEnabled] = useState(true);
   const [subtitleAvailable, setSubtitleAvailable] = useState(false);
 
-  const stbUrl = process.env.NEXT_PUBLIC_STB_URL || "http://localhost:4000";
-  const streamUrl = `${stbUrl}/api/stream/${filmId}`;
+  const serverUrl = process.env.NEXT_PUBLIC_STB_URL || "http://localhost:4000";
+  const streamUrl = `${serverUrl}/api/stream/${filmId}`;
 
   const searchParams = useSearchParams();
   const startTime = parseInt(searchParams.get("t") || "0");

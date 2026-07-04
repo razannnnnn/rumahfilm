@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 export async function PATCH(request) {
   try {
     const { oldName, newName } = await request.json();
-    const res = await fetch(`${process.env.STB_URL}/api/files/rename`, {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_STB_URL}/api/files/rename`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ oldPath: oldName, newName }),

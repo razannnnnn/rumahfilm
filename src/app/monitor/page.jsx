@@ -123,10 +123,10 @@ export default function MonitorPage() {
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-lg font-semibold text-gray-900 dark:text-white">Monitor STB</h1>
+            <h1 className="text-lg font-semibold text-gray-900 dark:text-white">Monitor Server</h1>
             <p className="text-xs text-gray-400 mt-1">
               {error
-                ? "⚠ Gagal terhubung ke STB"
+                ? "⚠ Gagal terhubung ke Server"
                 : lastUpdate
                 ? `Update terakhir: ${lastUpdate} · refresh otomatis 5 menit`
                 : "Memuat data..."}
@@ -149,7 +149,7 @@ export default function MonitorPage() {
             <svg className="w-10 h-10 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
             </svg>
-            <p className="text-sm text-gray-400">Tidak bisa terhubung ke STB</p>
+            <p className="text-sm text-gray-400">Tidak bisa terhubung ke Server</p>
             <button onClick={fetchData} className="text-xs text-[#86efac] underline">Coba lagi</button>
           </div>
         ) : (
@@ -224,7 +224,7 @@ export default function MonitorPage() {
               </div>
               <div className="flex items-center gap-1.5 mt-1">
                 <div className="w-1.5 h-1.5 rounded-full bg-[#86efac] animate-pulse" />
-                <p className="text-xs text-gray-400">STB aktif</p>
+                <p className="text-xs text-gray-400">Server aktif</p>
               </div>
             </StatCard>
 
@@ -244,7 +244,7 @@ export default function MonitorPage() {
                 <MetaRow label="Hostname" value={data?.hostname} />
                 <MetaRow label="Platform" value={data?.platform} />
                 <MetaRow label="CPU Cores" value={data?.cpuCores ? `${data.cpuCores} core` : "—"} />
-                <MetaRow label="Data dari STB" value={data?.updatedAt ? new Date(data.updatedAt).toLocaleTimeString("id-ID") : "—"} />
+                <MetaRow label="Data dari Server" value={data?.updatedAt ? new Date(data.updatedAt).toLocaleTimeString("id-ID") : "—"} />
               </div>
             </motion.div>
 

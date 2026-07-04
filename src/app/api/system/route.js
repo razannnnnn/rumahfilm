@@ -2,12 +2,12 @@ import { NextResponse } from "next/server";
 
 export async function GET() {
   try {
-    const res = await fetch(`${process.env.STB_URL}/api/resource`, {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_STB_URL}/api/resource`, {
       next: { revalidate: 300 },
     });
     const data = await res.json();
 
-    // Normalize data dari STB ke format yang dipakai frontend
+    // Normalize data dari server ke format yang dipakai frontend
     return NextResponse.json({
       cpu: parseFloat(data.cpu?.percent ?? 0),
       ram: {

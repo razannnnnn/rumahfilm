@@ -7,14 +7,14 @@ export async function DELETE(request) {
       return NextResponse.json({ error: "names diperlukan" }, { status: 400 });
     }
 
-    const stbUrl = process.env.STB_URL;
+    const serverUrl = process.env.NEXT_PUBLIC_STB_URL || "http://localhost:4000";
     let deleted = 0;
     const errors = [];
 
-    // Hapus satu per satu karena STB terima single filePath
+    // Hapus satu per satu karena server terima single filePath
     await Promise.all(
       names.map(async (name) => {
-        const res = await fetch(`${stbUrl}/api/files/delete`, {
+        const res = await fetch(`${serverUrl}/api/files/delete`, {
           method: "DELETE",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ filePath: name }),

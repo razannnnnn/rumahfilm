@@ -10,7 +10,7 @@ export async function GET(request) {
     }
 
     const res = await fetch(
-      `${process.env.STB_URL}/api/files/download?filePath=${encodeURIComponent(filePath)}`
+      `${process.env.NEXT_PUBLIC_STB_URL}/api/files/download?filePath=${encodeURIComponent(filePath)}`
     );
 
     if (!res.ok) {

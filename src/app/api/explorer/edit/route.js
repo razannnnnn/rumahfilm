@@ -7,10 +7,10 @@ export async function POST(request) {
 
     const formData = await request.formData();
 
-    const stbUrl = new URL(`${process.env.STB_URL}/api/files/upload`);
-    if (uploadPath) stbUrl.searchParams.set("path", uploadPath);
+    const serverUrl = new URL(`${process.env.NEXT_PUBLIC_STB_URL}/api/files/upload`);
+    if (uploadPath) serverUrl.searchParams.set("path", uploadPath);
 
-    const res = await fetch(stbUrl.toString(), {
+    const res = await fetch(serverUrl.toString(), {
       method: "POST",
       body: formData,
     });
