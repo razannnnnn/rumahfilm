@@ -89,7 +89,7 @@ export default function HistoryPage() {
                       <div className="bg-white dark:bg-[#1c1c1f] border border-gray-200 dark:border-white/[0.06] rounded-xl overflow-hidden hover:border-[#86efac]/40 transition-all duration-200">
 
                         {/* Poster */}
-                        <div className="relative bg-gray-100 dark:bg-[#222226]" style={{ aspectRatio: "2/3" }}>
+                        <div className="relative bg-gray-100 dark:bg-[#222226] overflow-hidden" style={{ aspectRatio: "2/3" }}>
                           {item.poster ? (
                             <Image
                               src={item.poster}

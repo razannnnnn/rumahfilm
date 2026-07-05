@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { signIn } from "next-auth/react";
+import { signIn } from "next-auth/client";
 import { useRouter } from "next/navigation";
 import { motion } from "motion/react";
 
