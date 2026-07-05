@@ -72,7 +72,6 @@ export default function FilmCard({ film, index }) {
             <p className="text-[13px] font-medium text-gray-900 dark:text-gray-100 truncate">{film.title}</p>
             <div className="flex items-center justify-between mt-1">
               <span className="text-[11px] text-gray-400">{film.year ?? "—"}</span>
-              <span className="text-[11px] text-gray-300 dark:text-gray-700">{film.sizeGB} GB</span>
             </div>
           </div>
         </div>

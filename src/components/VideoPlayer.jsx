@@ -33,6 +33,8 @@ export default function VideoPlayer({ filmId, title, poster }) {
   const tapTimer = useRef(null);
   const tapCount = useRef(0);
   const saveTimer = useRef(null);
+  const volumeTimer = useRef(null);
+  const brightnessTimer = useRef(null);
 
   const [playing, setPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -40,13 +42,16 @@ export default function VideoPlayer({ filmId, title, poster }) {
   const [currentTime, setCurrentTime] = useState(0);
   const [volume, setVolume] = useState(1);
   const [muted, setMuted] = useState(false);
+  const [brightness, setBrightness] = useState(1);
   const [showControls, setShowControls] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [buffered, setBuffered] = useState(0);
   const [seeking, setSeeking] = useState(false);
   const [skipIndicator, setSkipIndicator] = useState(null);
   const [volumeIndicator, setVolumeIndicator] = useState(null);
-  const volumeTimer = useRef(null);
+  const [brightnessIndicator, setBrightnessIndicator] = useState(null);
+  const [showVolumeSlider, setShowVolumeSlider] = useState(false);
+  const [showBrightnessSlider, setShowBrightnessSlider] = useState(false);
 
   const [subtitleCues, setSubtitleCues] = useState([]);
   const [currentCue, setCurrentCue] = useState(null);
@@ -106,7 +111,16 @@ export default function VideoPlayer({ filmId, title, poster }) {
     setCurrentCue(cue || null);
   }, [currentTime, subtitleCues, subtitleEnabled]);
 
-  // Keyboard shortcuts
+  // Keyboard shortcuts — use refs to avoid stale closures
+  const volumeRef = useRef(volume);
+  volumeRef.current = volume;
+  const mutedRef = useRef(muted);
+  mutedRef.current = muted;
+  const playingRef = useRef(playing);
+  playingRef.current = playing;
+  const subtitleEnabledRef = useRef(subtitleEnabled);
+  subtitleEnabledRef.current = subtitleEnabled;
+
   useEffect(() => {
     const handleKey = (e) => {
       if (!videoRef.current) return;
@@ -114,15 +128,22 @@ export default function VideoPlayer({ filmId, title, poster }) {
       if (e.key === "ArrowRight") { skip(10); showSkipIndicator("right"); }
       if (e.key === "ArrowLeft") { skip(-10); showSkipIndicator("left"); }
       if (e.key === "ArrowUp") {
-        const newVol = Math.min(1, volume + 0.1);
+        e.preventDefault();
+        const el = videoRef.current;
+        const newVol = Math.min(1, el.volume + 0.1);
+        el.volume = newVol;
+        el.muted = false;
         setVolume(newVol);
-        if (videoRef.current) videoRef.current.volume = newVol;
+        setMuted(false);
         showVolumePopup(newVol);
       }
       if (e.key === "ArrowDown") {
-        const newVol = Math.max(0, volume - 0.1);
+        e.preventDefault();
+        const el = videoRef.current;
+        const newVol = Math.max(0, el.volume - 0.1);
+        el.volume = newVol;
         setVolume(newVol);
-        if (videoRef.current) videoRef.current.volume = newVol;
+        if (newVol === 0) setMuted(true);
         showVolumePopup(newVol);
       }
       if (e.key === "f") toggleFullscreen();
@@ -130,7 +151,9 @@ export default function VideoPlayer({ filmId, title, poster }) {
     };
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
-  }, [volume, playing]);
+    // Only mount/unmount once — refs keep values fresh
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const showSkipIndicator = (side) => {
     setSkipIndicator(side);
@@ -143,36 +166,42 @@ export default function VideoPlayer({ filmId, title, poster }) {
     volumeTimer.current = setTimeout(() => setVolumeIndicator(null), 1500);
   };
 
+  const showBrightnessPopup = (val) => {
+    setBrightnessIndicator(Math.round(val * 100));
+    clearTimeout(brightnessTimer.current);
+    brightnessTimer.current = setTimeout(() => setBrightnessIndicator(null), 1500);
+  };
+
   const togglePlay = () => {
     if (!videoRef.current) return;
-    playing ? videoRef.current.pause() : videoRef.current.play();
+    playingRef.current ? videoRef.current.pause() : videoRef.current.play();
   };
 
+  // Fix: use videoRef.current.duration instead of state to avoid stale closure
   const skip = (seconds) => {
     if (!videoRef.current) return;
-    videoRef.current.currentTime = Math.max(0, Math.min(videoRef.current.currentTime + seconds, duration));
+    videoRef.current.currentTime = Math.max(0, videoRef.current.currentTime + seconds);
   };
 
-const handleTimeUpdate = () => {
-  if (!videoRef.current || seeking) return;
-  const cur = videoRef.current.currentTime;
-  const dur = videoRef.current.duration;
-  setCurrentTime(cur);
-  setProgress((cur / dur) * 100 || 0);
+  const handleTimeUpdate = () => {
+    if (!videoRef.current || seeking) return;
+    const cur = videoRef.current.currentTime;
+    const dur = videoRef.current.duration;
+    setCurrentTime(cur);
+    setProgress((cur / dur) * 100 || 0);
 
-  if (videoRef.current.buffered.length > 0) {
-    const bufferedEnd = videoRef.current.buffered.end(videoRef.current.buffered.length - 1);
-    setBuffered((bufferedEnd / dur) * 100 || 0);
-  }
-
-  // Tambah/update bagian ini
-  clearTimeout(saveTimer.current);
-  saveTimer.current = setTimeout(() => {
-    if (cur > 5) {
-      saveHistory({ id: filmId, title, currentTime: cur, poster }); // ← tambah poster
+    if (videoRef.current.buffered.length > 0) {
+      const bufferedEnd = videoRef.current.buffered.end(videoRef.current.buffered.length - 1);
+      setBuffered((bufferedEnd / dur) * 100 || 0);
     }
-  }, 10000);
-};
+
+    clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(() => {
+      if (cur > 5) {
+        saveHistory({ id: filmId, title, currentTime: cur, poster });
+      }
+    }, 10000);
+  };
 
   const handleSeek = (e) => {
     if (!videoRef.current) return;
@@ -181,18 +210,25 @@ const handleTimeUpdate = () => {
     setProgress(val);
   };
 
-  const handleVolume = (e) => {
+  const handleVolumeChange = (e) => {
+    if (!videoRef.current) return;
     const val = parseFloat(e.target.value);
+    videoRef.current.volume = val;
+    videoRef.current.muted = val === 0;
     setVolume(val);
     setMuted(val === 0);
-    if (videoRef.current) { videoRef.current.volume = val; videoRef.current.muted = val === 0; }
   };
 
   const toggleMute = () => {
     if (!videoRef.current) return;
-    const newMuted = !muted;
-    setMuted(newMuted);
+    const newMuted = !videoRef.current.muted;
     videoRef.current.muted = newMuted;
+    setMuted(newMuted);
+  };
+
+  const handleBrightnessChange = (e) => {
+    const val = parseFloat(e.target.value);
+    setBrightness(val);
   };
 
   const toggleFullscreen = () => {
@@ -215,14 +251,8 @@ const handleTimeUpdate = () => {
 
     tapTimer.current = setTimeout(() => {
       if (tapCount.current === 1) {
-        // Single tap — toggle controls saja
-        if (isCenter) {
-          resetHideTimer();
-        } else {
-          resetHideTimer();
-        }
+        resetHideTimer();
       } else if (tapCount.current >= 2) {
-        // Double tap — skip
         if (isLeft) { skip(-10); showSkipIndicator("left"); }
         else if (isRight) { skip(10); showSkipIndicator("right"); }
         else { togglePlay(); }
@@ -231,11 +261,12 @@ const handleTimeUpdate = () => {
     }, 250);
   };
 
-  // Tap center untuk play/pause (via controls button saja di mobile)
   const handleCenterPlay = (e) => {
     e.stopPropagation();
     togglePlay();
   };
+
+  const currentVolume = muted ? 0 : volume;
 
   return (
     <div
@@ -251,12 +282,11 @@ const handleTimeUpdate = () => {
         ref={videoRef}
         src={streamUrl}
         className="w-full h-full"
-        style={{ display: "block" }}
+        style={{ display: "block", filter: `brightness(${brightness})` }}
         onTimeUpdate={handleTimeUpdate}
         onLoadedMetadata={() => {
           const dur = videoRef.current?.duration || 0;
           setDuration(dur);
-          // Auto seek ke waktu dari history
           if (startTime > 0 && videoRef.current) {
             videoRef.current.currentTime = startTime;
           }
@@ -379,7 +409,40 @@ const handleTimeUpdate = () => {
         )}
       </AnimatePresence>
 
-      {/* Center play icon — hanya saat pause, klik ini toggle play */}
+      {/* Brightness indicator */}
+      <AnimatePresence>
+        {brightnessIndicator !== null && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.85 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.85 }}
+            transition={{ duration: 0.15 }}
+            className="absolute inset-0 flex items-center justify-center pointer-events-none"
+          >
+            <div
+              className="flex flex-col items-center gap-3 bg-black/60 backdrop-blur-sm rounded-2xl border border-white/10"
+              style={{ padding: "20px 28px", minWidth: "100px" }}
+            >
+              <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" />
+              </svg>
+              <div className="w-full rounded-full overflow-hidden" style={{ height: "4px", background: "rgba(255,255,255,0.15)" }}>
+                <motion.div
+                  className="h-full rounded-full bg-amber-400"
+                  initial={false}
+                  animate={{ width: `${brightnessIndicator}%` }}
+                  transition={{ duration: 0.1 }}
+                />
+              </div>
+              <span className="text-white font-semibold tabular-nums" style={{ fontSize: "20px" }}>
+                {brightnessIndicator}%
+              </span>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Center play icon — hanya saat pause */}
       <AnimatePresence>
         {!playing && showControls && (
           <motion.div
@@ -427,14 +490,8 @@ const handleTimeUpdate = () => {
               onClick={(e) => e.stopPropagation()}
             >
               {/* Progress bar */}
-              <div
-                className="relative w-full mb-3"
-                style={{ height: "20px", display: "flex", alignItems: "center" }}
-              >
-                <div
-                  className="absolute w-full rounded-full overflow-hidden"
-                  style={{ height: "3px", background: "rgba(255,255,255,0.15)" }}
-                >
+              <div className="relative w-full mb-3" style={{ height: "20px", display: "flex", alignItems: "center" }}>
+                <div className="absolute w-full rounded-full overflow-hidden" style={{ height: "3px", background: "rgba(255,255,255,0.15)" }}>
                   <div className="absolute h-full rounded-full" style={{ width: `${buffered}%`, background: "rgba(255,255,255,0.25)", transition: "width 0.3s" }} />
                   <div className="absolute h-full rounded-full" style={{ width: `${progress}%`, background: "#86efac", transition: seeking ? "none" : "width 0.1s" }} />
                 </div>
@@ -456,12 +513,12 @@ const handleTimeUpdate = () => {
 
               {/* Buttons row */}
               <div className="flex items-center justify-between">
-                <div className="flex items-center" style={{ gap: "16px" }}>
+                <div className="flex items-center gap-3 md:gap-4">
 
                   {/* Play/Pause */}
                   <button
                     onClick={togglePlay}
-                    className="text-white"
+                    className="text-white flex-shrink-0"
                     style={{ padding: "8px", borderRadius: "50%", background: "rgba(255,255,255,0.1)" }}
                   >
                     {playing ? (
@@ -476,7 +533,7 @@ const handleTimeUpdate = () => {
                   </button>
 
                   {/* Skip -10 */}
-                  <button onClick={() => { skip(-10); showSkipIndicator("left"); }} className="text-white/80 flex flex-col items-center" style={{ gap: "1px" }}>
+                  <button onClick={() => { skip(-10); showSkipIndicator("left"); }} className="text-white/80 flex flex-col items-center flex-shrink-0" style={{ gap: "1px" }}>
                     <svg style={{ width: "20px", height: "20px" }} fill="currentColor" viewBox="0 0 24 24">
                       <path d="M9.195 18.44c1.25.714 2.805-.189 2.805-1.629v-2.34l6.945 3.968c1.25.715 2.805-.188 2.805-1.628V8.69c0-1.44-1.555-2.343-2.805-1.628L12 11.03v-2.34c0-1.44-1.555-2.343-2.805-1.628l-7.108 4.061c-1.26.72-1.26 2.536 0 3.256l7.108 4.061z" />
                     </svg>
@@ -484,34 +541,138 @@ const handleTimeUpdate = () => {
                   </button>
 
                   {/* Skip +10 */}
-                  <button onClick={() => { skip(10); showSkipIndicator("right"); }} className="text-white/80 flex flex-col items-center" style={{ gap: "1px" }}>
+                  <button onClick={() => { skip(10); showSkipIndicator("right"); }} className="text-white/80 flex flex-col items-center flex-shrink-0" style={{ gap: "1px" }}>
                     <svg style={{ width: "20px", height: "20px" }} fill="currentColor" viewBox="0 0 24 24">
                       <path d="M5.055 7.06c-1.25-.714-2.805.189-2.805 1.628v8.123c0 1.44 1.555 2.342 2.805 1.628L12 14.471v2.34c0 1.44 1.555 2.342 2.805 1.628l7.108-4.061c1.26-.72 1.26-2.536 0-3.256L14.805 7.06C13.555 6.346 12 7.25 12 8.688v2.34L5.055 7.06z" />
                     </svg>
                     <span style={{ fontSize: "9px", opacity: 0.7, lineHeight: 1 }}>10</span>
                   </button>
 
-                  {/* Volume — sembunyikan di mobile, tetap ada di desktop */}
-                  <button onClick={toggleMute} className="text-white/80 hidden md:block">
-                    {muted || volume === 0 ? (
-                      <svg style={{ width: "20px", height: "20px" }} fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M13.5 4.06c0-1.336-1.616-2.005-2.56-1.06l-4.5 4.5H4.508c-1.141 0-2.318.664-2.66 1.905A9.76 9.76 0 001.5 12c0 .898.121 1.768.35 2.595.341 1.24 1.518 1.905 2.659 1.905h1.93l4.5 4.5c.945.945 2.561.276 2.561-1.06V4.06zM17.78 9.22a.75.75 0 10-1.06 1.06L18.44 12l-1.72 1.72a.75.75 0 001.06 1.06l1.72-1.72 1.72 1.72a.75.75 0 101.06-1.06L20.56 12l1.72-1.72a.75.75 0 00-1.06-1.06l-1.72 1.72-1.72-1.72z" />
-                      </svg>
-                    ) : (
-                      <svg style={{ width: "20px", height: "20px" }} fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M13.5 4.06c0-1.336-1.616-2.005-2.56-1.06l-4.5 4.5H4.508c-1.141 0-2.318.664-2.66 1.905A9.76 9.76 0 001.5 12c0 .898.121 1.768.35 2.595.341 1.24 1.518 1.905 2.659 1.905h1.93l4.5 4.5c.945.945 2.561.276 2.561-1.06V4.06zM18.584 5.106a.75.75 0 011.06 0c3.808 3.807 3.808 9.98 0 13.788a.75.75 0 01-1.06-1.06 8.25 8.25 0 000-11.668.75.75 0 010-1.06zM15.932 7.757a.75.75 0 011.061 0 6 6 0 010 8.486.75.75 0 01-1.06-1.061 4.5 4.5 0 000-6.364.75.75 0 010-1.06z" />
-                      </svg>
-                    )}
-                  </button>
+                  {/* Volume: icon + slider */}
+                  <div
+                    className="flex items-center gap-1.5 group/vol relative"
+                    onMouseEnter={() => setShowVolumeSlider(true)}
+                    onMouseLeave={() => setShowVolumeSlider(false)}
+                  >
+                    <button
+                      onClick={toggleMute}
+                      className="text-white/80 flex-shrink-0"
+                      style={{ padding: "4px" }}
+                    >
+                      {muted || currentVolume === 0 ? (
+                        <svg style={{ width: "20px", height: "20px" }} fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M13.5 4.06c0-1.336-1.616-2.005-2.56-1.06l-4.5 4.5H4.508c-1.141 0-2.318.664-2.66 1.905A9.76 9.76 0 001.5 12c0 .898.121 1.768.35 2.595.341 1.24 1.518 1.905 2.659 1.905h1.93l4.5 4.5c.945.945 2.561.276 2.561-1.06V4.06zM17.78 9.22a.75.75 0 10-1.06 1.06L18.44 12l-1.72 1.72a.75.75 0 001.06 1.06l1.72-1.72 1.72 1.72a.75.75 0 101.06-1.06L20.56 12l1.72-1.72a.75.75 0 00-1.06-1.06l-1.72 1.72-1.72-1.72z" />
+                        </svg>
+                      ) : currentVolume < 0.5 ? (
+                        <svg style={{ width: "20px", height: "20px" }} fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M13.5 4.06c0-1.336-1.616-2.005-2.56-1.06l-4.5 4.5H4.508c-1.141 0-2.318.664-2.66 1.905A9.76 9.76 0 001.5 12c0 .898.121 1.768.35 2.595.341 1.24 1.518 1.905 2.659 1.905h1.93l4.5 4.5c.945.945 2.561.276 2.561-1.06V4.06zM15.932 7.757a.75.75 0 011.061 0 6 6 0 010 8.486.75.75 0 01-1.06-1.061 4.5 4.5 0 000-6.364.75.75 0 010-1.06z" />
+                        </svg>
+                      ) : (
+                        <svg style={{ width: "20px", height: "20px" }} fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M13.5 4.06c0-1.336-1.616-2.005-2.56-1.06l-4.5 4.5H4.508c-1.141 0-2.318.664-2.66 1.905A9.76 9.76 0 001.5 12c0 .898.121 1.768.35 2.595.341 1.24 1.518 1.905 2.659 1.905h1.93l4.5 4.5c.945.945 2.561.276 2.561-1.06V4.06zM18.584 5.106a.75.75 0 011.06 0c3.808 3.807 3.808 9.98 0 13.788a.75.75 0 01-1.06-1.06 8.25 8.25 0 000-11.668.75.75 0 010-1.06zM15.932 7.757a.75.75 0 011.061 0 6 6 0 010 8.486.75.75 0 01-1.06-1.061 4.5 4.5 0 000-6.364.75.75 0 010-1.06z" />
+                        </svg>
+                      )}
+                    </button>
+
+                    {/* Volume slider — show on hover + always on mobile via touch */}
+                    <motion.div
+                      initial={false}
+                      animate={{ width: showVolumeSlider ? 72 : 0, opacity: showVolumeSlider ? 1 : 0 }}
+                      transition={{ duration: 0.2, ease: [0.32, 0.72, 0, 1] }}
+                      className="overflow-hidden flex-shrink-0"
+                    >
+                      <input
+                        type="range"
+                        min={0} max={1} step={0.01}
+                        value={currentVolume}
+                        onChange={handleVolumeChange}
+                        className="w-[72px] h-1 rounded-full appearance-none cursor-pointer"
+                        style={{
+                          background: `linear-gradient(90deg, #86efac ${currentVolume * 100}%, rgba(255,255,255,0.2) ${currentVolume * 100}%)`,
+                          outline: "none",
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                    </motion.div>
+
+                    {/* Always-visible thin volume slider for mobile */}
+                    <input
+                      type="range"
+                      min={0} max={1} step={0.01}
+                      value={currentVolume}
+                      onChange={handleVolumeChange}
+                      className="md:hidden w-12 h-1 rounded-full appearance-none cursor-pointer flex-shrink-0"
+                      style={{
+                        background: `linear-gradient(90deg, #86efac ${currentVolume * 100}%, rgba(255,255,255,0.2) ${currentVolume * 100}%)`,
+                        outline: "none",
+                      }}
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  </div>
 
                   {/* Time */}
-                  <span className="text-white/70 font-mono tabular-nums" style={{ fontSize: "11px" }}>
+                  <span className="text-white/70 font-mono tabular-nums flex-shrink-0" style={{ fontSize: "11px" }}>
                     {formatTime(currentTime)} <span className="text-white/30">/</span> {formatTime(duration)}
                   </span>
                 </div>
 
                 {/* Right controls */}
-                <div className="flex items-center" style={{ gap: "10px" }}>
+                <div className="flex items-center gap-2 md:gap-3">
+
+                  {/* Brightness: icon + slider */}
+                  <div
+                    className="hidden md:flex items-center gap-1.5 group/br relative"
+                    onMouseEnter={() => setShowBrightnessSlider(true)}
+                    onMouseLeave={() => setShowBrightnessSlider(false)}
+                  >
+                    <button
+                      onClick={() => setShowBrightnessSlider(!showBrightnessSlider)}
+                      className="text-white/80"
+                      style={{ padding: "4px" }}
+                    >
+                      <svg style={{ width: "18px", height: "18px" }} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" />
+                      </svg>
+                    </button>
+
+                    <motion.div
+                      initial={false}
+                      animate={{ width: showBrightnessSlider ? 72 : 0, opacity: showBrightnessSlider ? 1 : 0 }}
+                      transition={{ duration: 0.2, ease: [0.32, 0.72, 0, 1] }}
+                      className="overflow-hidden flex-shrink-0"
+                    >
+                      <input
+                        type="range"
+                        min={0} max={2} step={0.01}
+                        value={brightness}
+                        onChange={(e) => {
+                          handleBrightnessChange(e);
+                          showBrightnessPopup(parseFloat(e.target.value));
+                        }}
+                        className="w-[72px] h-1 rounded-full appearance-none cursor-pointer"
+                        style={{
+                          background: `linear-gradient(90deg, #fbbf24 ${(brightness / 2) * 100}%, rgba(255,255,255,0.2) ${(brightness / 2) * 100}%)`,
+                          outline: "none",
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                    </motion.div>
+                  </div>
+
+                  {/* Brightness mobile button — open popup */}
+                  <button
+                    onClick={() => {
+                      setShowBrightnessSlider(!showBrightnessSlider);
+                      showBrightnessPopup(brightness);
+                    }}
+                    className="md:hidden text-white/80"
+                    style={{ padding: "4px" }}
+                  >
+                    <svg style={{ width: "18px", height: "18px" }} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" />
+                    </svg>
+                  </button>
+
                   {/* CC */}
                   {subtitleAvailable && (
                     <button

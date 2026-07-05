@@ -96,14 +96,6 @@ export default async function FilmDetailPage({ params }) {
                     ★ {film.rating}
                   </span>
                 )}
-                {film.ext && (
-                  <span className="text-xs text-gray-400 border border-gray-200 dark:border-white/[0.08] bg-gray-100 dark:bg-white/5 px-2.5 py-1 rounded-lg uppercase">
-                    {film.ext.replace(".", "")}
-                  </span>
-                )}
-                <span className="text-xs text-gray-400 border border-gray-200 dark:border-white/[0.08] bg-gray-100 dark:bg-white/5 px-2.5 py-1 rounded-lg">
-                  {film.sizeGB} GB
-                </span>
               </div>
 
               {film.overview && (
