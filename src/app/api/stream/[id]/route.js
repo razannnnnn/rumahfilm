@@ -7,13 +7,20 @@ export async function GET(request, { params }) {
     headers: range ? { range } : {},
   });
 
+  const headers = new Headers();
+  headers.set("Content-Type", res.headers.get("Content-Type") || "video/mp4");
+  headers.set("Accept-Ranges", "bytes");
+
+  // Only forward these headers if they actually exist — empty strings
+  // confuse the browser's media decoder and break duration detection
+  const contentRange = res.headers.get("Content-Range");
+  if (contentRange) headers.set("Content-Range", contentRange);
+
+  const contentLength = res.headers.get("Content-Length");
+  if (contentLength) headers.set("Content-Length", contentLength);
+
   return new Response(res.body, {
     status: res.status,
-    headers: {
-      "Content-Type": res.headers.get("Content-Type") || "video/mp4",
-      "Content-Range": res.headers.get("Content-Range") || "",
-      "Accept-Ranges": "bytes",
-      "Content-Length": res.headers.get("Content-Length") || "",
-    },
+    headers,
   });
 }

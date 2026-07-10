@@ -65,7 +65,7 @@ export default function VideoPlayer({ filmId, title, poster }) {
   const startTime = parseInt(searchParams.get("t") || "0");
 
   const formatTime = (s) => {
-    if (!s || isNaN(s)) return "0:00";
+    if (!s || isNaN(s) || !isFinite(s)) return "0:00";
     const h = Math.floor(s / 3600);
     const m = Math.floor((s % 3600) / 60);
     const sec = Math.floor(s % 60);
@@ -188,9 +188,12 @@ export default function VideoPlayer({ filmId, title, poster }) {
     const cur = videoRef.current.currentTime;
     const dur = videoRef.current.duration;
     setCurrentTime(cur);
-    setProgress((cur / dur) * 100 || 0);
+    if (dur && isFinite(dur)) {
+      setDuration(dur); // Keep updating in case browser resolves duration later
+      setProgress((cur / dur) * 100 || 0);
+    }
 
-    if (videoRef.current.buffered.length > 0) {
+    if (videoRef.current.buffered.length > 0 && dur && isFinite(dur)) {
       const bufferedEnd = videoRef.current.buffered.end(videoRef.current.buffered.length - 1);
       setBuffered((bufferedEnd / dur) * 100 || 0);
     }
@@ -286,10 +289,14 @@ export default function VideoPlayer({ filmId, title, poster }) {
         onTimeUpdate={handleTimeUpdate}
         onLoadedMetadata={() => {
           const dur = videoRef.current?.duration || 0;
-          setDuration(dur);
+          if (dur && isFinite(dur)) setDuration(dur);
           if (startTime > 0 && videoRef.current) {
             videoRef.current.currentTime = startTime;
           }
+        }}
+        onDurationChange={() => {
+          const dur = videoRef.current?.duration || 0;
+          if (dur && isFinite(dur)) setDuration(dur);
         }}
         onPlay={() => setPlaying(true)}
         onPause={() => setPlaying(false)}
