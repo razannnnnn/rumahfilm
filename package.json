@@ -9,7 +9,9 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@aejkatappaja/phantom-ui": "^1.4.0",
     "googleapis": "^171.4.0",
+    "lenis": "^1.3.25",
     "mime-types": "^3.0.2",
     "motion": "^12.38.0",
     "next": "16.2.3",
