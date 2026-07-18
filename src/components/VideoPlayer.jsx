@@ -35,6 +35,7 @@ export default function VideoPlayer({ filmId, title, poster }) {
   const saveTimer = useRef(null);
   const volumeTimer = useRef(null);
   const brightnessTimer = useRef(null);
+  const seekDebounceTimer = useRef(null);
 
   const [playing, setPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -52,6 +53,8 @@ export default function VideoPlayer({ filmId, title, poster }) {
   const [brightnessIndicator, setBrightnessIndicator] = useState(null);
   const [showVolumeSlider, setShowVolumeSlider] = useState(false);
   const [showBrightnessSlider, setShowBrightnessSlider] = useState(false);
+  const [isBuffering, setIsBuffering] = useState(false);
+  const [isTranscoded, setIsTranscoded] = useState(false);
 
   const [subtitleCues, setSubtitleCues] = useState([]);
   const [currentCue, setCurrentCue] = useState(null);
@@ -84,7 +87,10 @@ export default function VideoPlayer({ filmId, title, poster }) {
     }, 3000);
   }, [playing]);
 
-  useEffect(() => () => clearTimeout(hideTimer.current), []);
+  useEffect(() => () => {
+    clearTimeout(hideTimer.current);
+    clearTimeout(seekDebounceTimer.current);
+  }, []);
 
   useEffect(() => {
     const handleFullscreenChange = () => setIsFullscreen(!!document.fullscreenElement);
@@ -92,8 +98,19 @@ export default function VideoPlayer({ filmId, title, poster }) {
     return () => document.removeEventListener("fullscreenchange", handleFullscreenChange);
   }, []);
 
-  // Fetch real duration from server (ffprobe) as fallback for transcoded streams
+  // Fetch stream info (codec detection) and duration on mount
   useEffect(() => {
+    const fetchStreamInfo = async () => {
+      try {
+        const res = await fetch(`/api/stream/${filmId}/info`);
+        if (res.ok) {
+          const data = await res.json();
+          setIsTranscoded(!!data.needsTranscode);
+        }
+      } catch {
+        // fallback: will detect via duration heuristic
+      }
+    };
     const fetchDuration = async () => {
       try {
         const res = await fetch(`/api/duration/${filmId}`);
@@ -110,8 +127,22 @@ export default function VideoPlayer({ filmId, title, poster }) {
         // ignore — browser duration will be used
       }
     };
+    fetchStreamInfo();
     fetchDuration();
   }, [filmId]);
+
+  // When stream URL changes (transcoded seek), reload and autoplay
+  useEffect(() => {
+    if (!videoRef.current) return;
+    const el = videoRef.current;
+    el.load();
+    const playOnReady = () => {
+      el.play().catch(() => {});
+      el.removeEventListener("canplay", playOnReady);
+    };
+    el.addEventListener("canplay", playOnReady);
+    return () => el.removeEventListener("canplay", playOnReady);
+  }, [streamUrl]);
 
   useEffect(() => {
     const loadSubtitle = async () => {
@@ -207,13 +238,17 @@ export default function VideoPlayer({ filmId, title, poster }) {
     const effectiveDur = duration > 0 ? duration : videoRef.current.duration;
     const targetTime = Math.max(0, Math.min(effectiveDur, currentTime + seconds));
     
-    const browserDur = videoRef.current.duration;
-    const isTranscoded = !isFinite(browserDur) || (fetchedDuration.current && browserDur < fetchedDuration.current * 0.9);
-    
     if (isTranscoded) {
-      setOffsetTime(targetTime);
-      setStreamUrl(`/api/stream/${filmId}?start=${targetTime}`);
-      setPlaying(true);
+      // Debounce: wait 400ms before actually seeking (in case user spams skip)
+      setIsBuffering(true);
+      setCurrentTime(targetTime);
+      setProgress(effectiveDur > 0 ? (targetTime / effectiveDur) * 100 : 0);
+      clearTimeout(seekDebounceTimer.current);
+      seekDebounceTimer.current = setTimeout(() => {
+        setOffsetTime(targetTime);
+        setStreamUrl(`/api/stream/${filmId}?start=${targetTime}`);
+        setPlaying(true);
+      }, 400);
     } else {
       videoRef.current.currentTime = targetTime;
     }
@@ -260,14 +295,16 @@ export default function VideoPlayer({ filmId, title, poster }) {
     if (effectiveDur && isFinite(effectiveDur)) {
       const targetTime = (val / 100) * effectiveDur;
       
-      // Detect if stream is transcoded (browser doesn't know full duration)
-      const browserDur = videoRef.current.duration;
-      const isTranscoded = !isFinite(browserDur) || (fetchedDuration.current && browserDur < fetchedDuration.current * 0.9);
-      
       if (isTranscoded) {
-        setOffsetTime(targetTime);
-        setStreamUrl(`/api/stream/${filmId}?start=${targetTime}`);
-        setPlaying(true); // Auto-play after seek
+        // Debounce: wait 500ms after user stops dragging before seeking
+        setIsBuffering(true);
+        setCurrentTime(targetTime);
+        clearTimeout(seekDebounceTimer.current);
+        seekDebounceTimer.current = setTimeout(() => {
+          setOffsetTime(targetTime);
+          setStreamUrl(`/api/stream/${filmId}?start=${targetTime}`);
+          setPlaying(true); // Auto-play after seek
+        }, 500);
       } else {
         videoRef.current.currentTime = targetTime;
       }
@@ -370,8 +407,12 @@ export default function VideoPlayer({ filmId, title, poster }) {
             }
           }
         }}
-        onPlay={() => setPlaying(true)}
+        onPlay={() => { setPlaying(true); setIsBuffering(false); }}
         onPause={() => setPlaying(false)}
+        onWaiting={() => setIsBuffering(true)}
+        onCanPlay={() => setIsBuffering(false)}
+        onSeeking={() => setIsBuffering(true)}
+        onSeeked={() => setIsBuffering(false)}
       />
 
       {/* Double tap skip indicator kiri */}
@@ -516,6 +557,31 @@ export default function VideoPlayer({ filmId, title, poster }) {
               <span className="text-white font-semibold tabular-nums" style={{ fontSize: "20px" }}>
                 {brightnessIndicator}%
               </span>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Buffering spinner */}
+      <AnimatePresence>
+        {isBuffering && playing && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
+            className="absolute inset-0 flex items-center justify-center pointer-events-none"
+          >
+            <div className="flex flex-col items-center gap-3">
+              <div
+                className="rounded-full border-[3px] border-white/20 border-t-[#86efac]"
+                style={{
+                  width: "48px",
+                  height: "48px",
+                  animation: "spin 0.8s linear infinite",
+                }}
+              />
+              <span className="text-white/60 text-xs font-medium">Memuat...</span>
             </div>
           </motion.div>
         )}

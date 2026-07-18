@@ -28,3 +28,7 @@ html {
 .dark ::-webkit-scrollbar-thumb {
   background: #2a2a2e;
 }
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
