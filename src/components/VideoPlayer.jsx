@@ -212,15 +212,14 @@ export default function VideoPlayer({ filmId, title, poster }) {
     const browserDur = videoRef.current.duration;
     setCurrentTime(cur);
 
-    // Use browser duration if valid, otherwise fall back to server-fetched duration
+    // Always prefer server-fetched duration (ffprobe) — browser duration is
+    // unreliable for transcoded FFmpeg streams (reports fragment size, not total)
+    const serverDur = fetchedDuration.current;
     const validBrowserDur = browserDur && isFinite(browserDur) && browserDur > 0;
-    const effectiveDur = validBrowserDur ? browserDur : fetchedDuration.current;
-
-    if (validBrowserDur) {
-      setDuration(browserDur);
-    }
+    const effectiveDur = serverDur && serverDur > 0 ? serverDur : (validBrowserDur ? browserDur : null);
 
     if (effectiveDur && effectiveDur > 0) {
+      setDuration(effectiveDur);
       setProgress((cur / effectiveDur) * 100 || 0);
     }
 
@@ -319,18 +318,24 @@ export default function VideoPlayer({ filmId, title, poster }) {
         style={{ display: "block", filter: `brightness(${brightness})` }}
         onTimeUpdate={handleTimeUpdate}
         onLoadedMetadata={() => {
-          const dur = videoRef.current?.duration;
-          if (dur && isFinite(dur) && dur > 0) {
-            setDuration(dur);
+          // Only use browser duration if we don't have server duration
+          if (!fetchedDuration.current) {
+            const dur = videoRef.current?.duration;
+            if (dur && isFinite(dur) && dur > 0) {
+              setDuration(dur);
+            }
           }
           if (startTime > 0 && videoRef.current) {
             videoRef.current.currentTime = startTime;
           }
         }}
         onDurationChange={() => {
-          const dur = videoRef.current?.duration;
-          if (dur && isFinite(dur) && dur > 0) {
-            setDuration(dur);
+          // Only use browser duration if we don't have server duration
+          if (!fetchedDuration.current) {
+            const dur = videoRef.current?.duration;
+            if (dur && isFinite(dur) && dur > 0) {
+              setDuration(dur);
+            }
           }
         }}
         onPlay={() => setPlaying(true)}
