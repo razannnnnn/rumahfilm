@@ -58,8 +58,10 @@ export default function VideoPlayer({ filmId, title, poster }) {
   const [subtitleEnabled, setSubtitleEnabled] = useState(true);
   const [subtitleAvailable, setSubtitleAvailable] = useState(false);
 
-  const serverUrl = process.env.NEXT_PUBLIC_STB_URL || "http://localhost:4000";
-  const streamUrl = `${serverUrl}/api/stream/${filmId}`;
+  // Server-side duration fallback (via ffprobe) for transcoded streams
+  const fetchedDuration = useRef(null);
+
+  const streamUrl = `/api/stream/${filmId}`;
 
   const searchParams = useSearchParams();
   const startTime = parseInt(searchParams.get("t") || "0");
@@ -88,6 +90,27 @@ export default function VideoPlayer({ filmId, title, poster }) {
     document.addEventListener("fullscreenchange", handleFullscreenChange);
     return () => document.removeEventListener("fullscreenchange", handleFullscreenChange);
   }, []);
+
+  // Fetch real duration from server (ffprobe) as fallback for transcoded streams
+  useEffect(() => {
+    const fetchDuration = async () => {
+      try {
+        const res = await fetch(`/api/duration/${filmId}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data.duration && data.duration > 0) {
+          fetchedDuration.current = data.duration;
+          // If browser still doesn't know the duration, use the fetched one
+          if (!duration || !isFinite(duration) || duration <= 0) {
+            setDuration(data.duration);
+          }
+        }
+      } catch {
+        // ignore — browser duration will be used
+      }
+    };
+    fetchDuration();
+  }, [filmId]);
 
   useEffect(() => {
     const loadSubtitle = async () => {
@@ -186,18 +209,24 @@ export default function VideoPlayer({ filmId, title, poster }) {
   const handleTimeUpdate = () => {
     if (!videoRef.current || seeking) return;
     const cur = videoRef.current.currentTime;
-    const dur = videoRef.current.duration;
+    const browserDur = videoRef.current.duration;
     setCurrentTime(cur);
 
-    // Keep updating duration in case it resolved late (e.g. moov atom at end of file)
-    if (dur && isFinite(dur) && dur > 0) {
-      setDuration(dur);
-      setProgress((cur / dur) * 100 || 0);
+    // Use browser duration if valid, otherwise fall back to server-fetched duration
+    const validBrowserDur = browserDur && isFinite(browserDur) && browserDur > 0;
+    const effectiveDur = validBrowserDur ? browserDur : fetchedDuration.current;
+
+    if (validBrowserDur) {
+      setDuration(browserDur);
     }
 
-    if (videoRef.current.buffered.length > 0 && dur && isFinite(dur)) {
+    if (effectiveDur && effectiveDur > 0) {
+      setProgress((cur / effectiveDur) * 100 || 0);
+    }
+
+    if (videoRef.current.buffered.length > 0 && effectiveDur && effectiveDur > 0) {
       const bufferedEnd = videoRef.current.buffered.end(videoRef.current.buffered.length - 1);
-      setBuffered((bufferedEnd / dur) * 100 || 0);
+      setBuffered((bufferedEnd / effectiveDur) * 100 || 0);
     }
 
     clearTimeout(saveTimer.current);
