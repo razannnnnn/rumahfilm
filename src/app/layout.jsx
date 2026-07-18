@@ -1,6 +1,9 @@
 import { Geist } from "next/font/google";
 import "./globals.css";
+import "lenis/dist/lenis.css";
+import "@aejkatappaja/phantom-ui/ssr.css";
 import { Providers } from "./providers";
+import LenisProvider from "./lenis-provider";
 
 const geist = Geist({ subsets: ["latin"] });
 
@@ -35,7 +38,9 @@ export default function RootLayout({ children }) {
       </head>
       <body className={`${geist.className} bg-gray-50 dark:bg-[#111113] text-gray-900 dark:text-gray-100 antialiased`}>
         <Providers>
-          {children}
+          <LenisProvider>
+            {children}
+          </LenisProvider>
         </Providers>
       </body>
     </html>
