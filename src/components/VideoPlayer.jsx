@@ -61,7 +61,8 @@ export default function VideoPlayer({ filmId, title, poster }) {
   // Server-side duration fallback (via ffprobe) for transcoded streams
   const fetchedDuration = useRef(null);
 
-  const streamUrl = `/api/stream/${filmId}`;
+  const [streamUrl, setStreamUrl] = useState(`/api/stream/${filmId}`);
+  const [offsetTime, setOffsetTime] = useState(0);
 
   const searchParams = useSearchParams();
   const startTime = parseInt(searchParams.get("t") || "0");
@@ -200,17 +201,30 @@ export default function VideoPlayer({ filmId, title, poster }) {
     playingRef.current ? videoRef.current.pause() : videoRef.current.play();
   };
 
-  // Fix: use videoRef.current.duration instead of state to avoid stale closure
+  // Use the effective duration state for calculations instead of the raw video element duration
   const skip = (seconds) => {
     if (!videoRef.current) return;
-    videoRef.current.currentTime = Math.max(0, videoRef.current.currentTime + seconds);
+    const effectiveDur = duration > 0 ? duration : videoRef.current.duration;
+    const targetTime = Math.max(0, Math.min(effectiveDur, currentTime + seconds));
+    
+    const browserDur = videoRef.current.duration;
+    const isTranscoded = !isFinite(browserDur) || (fetchedDuration.current && browserDur < fetchedDuration.current * 0.9);
+    
+    if (isTranscoded) {
+      setOffsetTime(targetTime);
+      setStreamUrl(`/api/stream/${filmId}?start=${targetTime}`);
+      setPlaying(true);
+    } else {
+      videoRef.current.currentTime = targetTime;
+    }
   };
 
   const handleTimeUpdate = () => {
     if (!videoRef.current || seeking) return;
     const cur = videoRef.current.currentTime;
+    const realCur = cur + offsetTime;
     const browserDur = videoRef.current.duration;
-    setCurrentTime(cur);
+    setCurrentTime(realCur);
 
     // Always prefer server-fetched duration (ffprobe) — browser duration is
     // unreliable for transcoded FFmpeg streams (reports fragment size, not total)
@@ -220,7 +234,7 @@ export default function VideoPlayer({ filmId, title, poster }) {
 
     if (effectiveDur && effectiveDur > 0) {
       setDuration(effectiveDur);
-      setProgress((cur / effectiveDur) * 100 || 0);
+      setProgress((realCur / effectiveDur) * 100 || 0);
     }
 
     if (videoRef.current.buffered.length > 0 && effectiveDur && effectiveDur > 0) {
@@ -239,7 +253,25 @@ export default function VideoPlayer({ filmId, title, poster }) {
   const handleSeek = (e) => {
     if (!videoRef.current) return;
     const val = parseFloat(e.target.value);
-    videoRef.current.currentTime = (val / 100) * videoRef.current.duration;
+    
+    // Always use the validated duration state (which includes server fallback)
+    const effectiveDur = duration > 0 ? duration : videoRef.current.duration;
+    
+    if (effectiveDur && isFinite(effectiveDur)) {
+      const targetTime = (val / 100) * effectiveDur;
+      
+      // Detect if stream is transcoded (browser doesn't know full duration)
+      const browserDur = videoRef.current.duration;
+      const isTranscoded = !isFinite(browserDur) || (fetchedDuration.current && browserDur < fetchedDuration.current * 0.9);
+      
+      if (isTranscoded) {
+        setOffsetTime(targetTime);
+        setStreamUrl(`/api/stream/${filmId}?start=${targetTime}`);
+        setPlaying(true); // Auto-play after seek
+      } else {
+        videoRef.current.currentTime = targetTime;
+      }
+    }
     setProgress(val);
   };
 

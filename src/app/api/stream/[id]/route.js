@@ -3,7 +3,11 @@ export async function GET(request, { params }) {
   const serverUrl = process.env.NEXT_PUBLIC_STB_URL || "http://localhost:4000";
   const range = request.headers.get("range");
   
-  const res = await fetch(`${serverUrl}/api/stream/${id}`, {
+  const url = new URL(request.url);
+  const searchParams = url.searchParams.toString();
+  const backendUrl = `${serverUrl}/api/stream/${id}${searchParams ? `?${searchParams}` : ""}`;
+  
+  const res = await fetch(backendUrl, {
     headers: range ? { range } : {},
   });
 
