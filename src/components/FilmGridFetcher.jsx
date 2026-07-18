@@ -1,12 +1,6 @@
-import { Suspense } from "react";
-import HeroBanner from "@/components/HeroBanner";
-import FilmGridFetcher from "@/components/FilmGridFetcher";
-import FilmGridSkeleton from "@/components/FilmGridSkeleton";
-import Sidebar from "@/components/Sidebar";
+import FilmGrid from "./FilmGrid";
 
-export const dynamic = "force-dynamic";
-
-async function getFilmsForHero() {
+async function getFilmsWithMetadata() {
   const serverUrl = process.env.NEXT_PUBLIC_STB_URL || "http://localhost:4000";
   const vercelUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
 
@@ -36,22 +30,7 @@ async function getFilmsForHero() {
   return filmsWithMeta;
 }
 
-export default async function DashboardPage() {
-  const heroFilms = await getFilmsForHero();
-
-  return (
-    <div style={{ display: "flex", minHeight: "100vh" }} className="bg-gray-50 dark:bg-[#111113]">
-      <Sidebar />
-
-      {/* Main */}
-      <main style={{ flex: 1, minWidth: 0 }}>
-        <HeroBanner films={heroFilms} />
-
-        {/* Film grid with Suspense — skeleton shows while streaming */}
-        <Suspense fallback={<FilmGridSkeleton />}>
-          <FilmGridFetcher />
-        </Suspense>
-      </main>
-    </div>
-  );
+export default async function FilmGridFetcher() {
+  const films = await getFilmsWithMetadata();
+  return <FilmGrid films={films} />;
 }
