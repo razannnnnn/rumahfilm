@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 export async function GET(request, { params }) {
   const { id } = await params;
   const serverUrl = process.env.NEXT_PUBLIC_STB_URL || "http://localhost:4000";
@@ -9,6 +11,7 @@ export async function GET(request, { params }) {
   
   const res = await fetch(backendUrl, {
     headers: range ? { range } : {},
+    cache: "no-store",
   });
 
   const headers = new Headers();
