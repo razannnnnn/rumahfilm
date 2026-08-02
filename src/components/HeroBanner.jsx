@@ -4,7 +4,10 @@ import { motion, AnimatePresence } from "motion/react";
 import Link from "next/link";
 
 export default function HeroBanner({ films }) {
-  const featured = films.filter((f) => f.backdrop);
+  // ponytail: acak + batasi 5 banner sekali per mount (diacak tiap halaman dibuka)
+  const [featured] = useState(() =>
+    [...films].filter((f) => f.backdrop).sort(() => Math.random() - 0.5).slice(0, 5)
+  );
   const [current, setCurrent] = useState(0);
   const [direction, setDirection] = useState(1);
 
