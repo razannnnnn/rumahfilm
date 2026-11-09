@@ -1,29 +1,30 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useMemo, useSyncExternalStore } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import Link from "next/link";
 import Image from "next/image";
 import Sidebar from "@/components/Sidebar";
-import { getHistory, removeHistory, clearHistory, formatWatchedAt, formatDuration } from "@/lib/history";
+import { getHistory, subscribeHistory, removeHistory, clearHistory, formatWatchedAt, formatDuration } from "@/lib/history";
 
 export default function HistoryPage() {
-  const [history, setHistory] = useState([]);
-  const [loaded, setLoaded] = useState(false);
-
-  useEffect(() => {
-    setHistory(getHistory());
-    setLoaded(true);
-  }, []);
+  const snapshot = useSyncExternalStore(
+    subscribeHistory,
+    () => JSON.stringify(getHistory()),
+    () => "null"
+  );
+  const loaded = snapshot !== "null";
+  const history = useMemo(
+    () => (snapshot === "null" ? [] : JSON.parse(snapshot)),
+    [snapshot]
+  );
 
   const handleRemove = (id) => {
     removeHistory(id);
-    setHistory(getHistory());
   };
 
   const handleClearAll = () => {
     if (confirm("Hapus semua riwayat?")) {
       clearHistory();
-      setHistory([]);
     }
   };
 

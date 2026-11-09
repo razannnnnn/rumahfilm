@@ -3,20 +3,28 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 async function getFilm(id) {
-  const serverUrl = process.env.NEXT_PUBLIC_STB_URL || "http://localhost:4000";
+  const serverUrl = process.env.STB_URL || "http://localhost:4000";
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
 
-  const res = await fetch(`${serverUrl}/api/films`, { cache: "no-store" });
-  const { films } = await res.json();
-  const film = films.find((f) => f.id === id) || null;
+  let film = null;
+  try {
+    const res = await fetch(`${serverUrl}/api/films`, { cache: "no-store" });
+    if (res.ok) {
+      const { films } = await res.json();
+      film = Array.isArray(films) ? films.find((item) => item.id === id) : null;
+    }
+  } catch {
+    film = null;
+  }
+
   if (!film) return null;
 
-  // Fetch poster dari TMDB
   try {
     const metaRes = await fetch(
       `${baseUrl}/api/metadata?title=${encodeURIComponent(film.title)}&year=${film.year || ""}`,
       { cache: "force-cache" }
     );
+    if (!metaRes.ok) return { ...film, poster: null };
     const meta = await metaRes.json();
     return {
       ...film,

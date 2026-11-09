@@ -7,7 +7,7 @@ export async function DELETE(request) {
       return NextResponse.json({ error: "names diperlukan" }, { status: 400 });
     }
 
-    const serverUrl = process.env.NEXT_PUBLIC_STB_URL || "http://localhost:4000";
+    const serverUrl = process.env.STB_URL || "http://localhost:4000";
     let deleted = 0;
     const errors = [];
 

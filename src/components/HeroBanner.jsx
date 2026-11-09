@@ -3,10 +3,21 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import Link from "next/link";
 
-export default function HeroBanner({ films }) {
-  // ponytail: acak + batasi 5 banner sekali per mount (diacak tiap halaman dibuka)
+function seededShuffle(items, seed) {
+  const result = [...items];
+  let state = (seed || 1) >>> 0;
+  for (let i = result.length - 1; i > 0; i--) {
+    state = (state * 1664525 + 1013904223) % 4294967296;
+    const j = state % (i + 1);
+    [result[i], result[j]] = [result[j], result[i]];
+  }
+  return result;
+}
+
+export default function HeroBanner({ films, seed = 1 }) {
+  // Seed datang dari server agar urutan acak sama saat SSR dan hydration.
   const [featured] = useState(() =>
-    [...films].filter((f) => f.backdrop).sort(() => Math.random() - 0.5).slice(0, 5)
+    seededShuffle(films.filter((f) => f.backdrop), seed).slice(0, 5)
   );
   const [current, setCurrent] = useState(0);
   const [direction, setDirection] = useState(1);

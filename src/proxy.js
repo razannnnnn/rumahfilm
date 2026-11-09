@@ -51,13 +51,25 @@ export async function proxy(req) {
   // Auth check
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
 
-  const isAdminRoute =
-    pathname.startsWith("/monitoring") ||
+  const isAdminPage =
     pathname.startsWith("/monitor") ||
     pathname.startsWith("/explorer") ||
     pathname.startsWith("/admin");
 
-  if (isAdminRoute && !token) {
+  const isAdminApi =
+    pathname.startsWith("/api/explorer") || pathname.startsWith("/api/system");
+
+  if (isAdminApi && !token) {
+    return new NextResponse(
+      JSON.stringify({ error: "Unauthorized" }),
+      {
+        status: 401,
+        headers: { "Content-Type": "application/json" },
+      }
+    );
+  }
+
+  if (isAdminPage && !token) {
     return NextResponse.redirect(new URL("/login", req.url));
   }
 

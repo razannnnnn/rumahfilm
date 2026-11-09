@@ -1,6 +1,17 @@
 const HISTORY_KEY = "rumahfilm_history";
 const MAX_HISTORY = 20;
 
+const listeners = new Set();
+
+export function subscribeHistory(callback) {
+  listeners.add(callback);
+  return () => listeners.delete(callback);
+}
+
+function emitHistoryChange() {
+  listeners.forEach((callback) => callback());
+}
+
 export function getHistory() {
   try {
     const data = localStorage.getItem(HISTORY_KEY);
@@ -31,6 +42,7 @@ export function saveHistory({ id, title, currentTime, poster }) {
     }
 
     localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+    emitHistoryChange();
   } catch {}
 }
 
@@ -48,12 +60,14 @@ export function removeHistory(id) {
   try {
     const history = getHistory().filter((h) => h.id !== id);
     localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+    emitHistoryChange();
   } catch {}
 }
 
 export function clearHistory() {
   try {
     localStorage.removeItem(HISTORY_KEY);
+    emitHistoryChange();
   } catch {}
 }
 

@@ -3,10 +3,17 @@ import { google } from "googleapis";
 const SPREADSHEET_ID = process.env.GOOGLE_SPREADSHEET_ID;
 
 function getAuth() {
+  const email = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
+  const privateKey = process.env.GOOGLE_PRIVATE_KEY;
+
+  if (!SPREADSHEET_ID || !email || !privateKey) {
+    throw new Error("Konfigurasi Google Sheets belum lengkap");
+  }
+
   return new google.auth.GoogleAuth({
     credentials: {
-      client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-      private_key: process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, "\n"),
+      client_email: email,
+      private_key: privateKey.replace(/\\n/g, "\n"),
     },
     scopes: ["https://www.googleapis.com/auth/spreadsheets"],
   });

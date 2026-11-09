@@ -1,5 +1,8 @@
 const config = {
-  filmsPath: process.env.FILMS_PATH || "/mnt/harddisk/Film",
+  filmsPath:
+    process.env.FILM_PATH ||
+    process.env.FILMS_PATH ||
+    "/mnt/harddisk/Film",
   tmdbApiKey: process.env.TMDB_API_KEY || "",
   tmdbBaseUrl: "https://api.themoviedb.org/3",
   tmdbImageBase: "https://image.tmdb.org/t/p/w500",

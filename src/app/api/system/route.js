@@ -2,9 +2,12 @@ import { NextResponse } from "next/server";
 
 export async function GET() {
   try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_STB_URL}/api/resource`, {
+    const res = await fetch(`${process.env.STB_URL || "http://localhost:4000"}/api/resource`, {
       next: { revalidate: 300 },
     });
+    if (!res.ok) {
+      throw new Error(`Server monitoring tidak merespons (${res.status})`);
+    }
     const data = await res.json();
 
     // Normalize data dari server ke format yang dipakai frontend

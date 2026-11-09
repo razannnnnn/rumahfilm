@@ -1,17 +1,25 @@
 import FilmGrid from "./FilmGrid";
 
 async function getFilmsWithMetadata() {
-  const serverUrl = process.env.NEXT_PUBLIC_STB_URL || "http://localhost:4000";
+  const serverUrl = process.env.STB_URL || "http://localhost:4000";
   const vercelUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
 
-  const filmsRes = await fetch(`${serverUrl}/api/films`, { cache: "no-store" });
-  const { films } = await filmsRes.json();
+  let films = [];
+  try {
+    const filmsRes = await fetch(`${serverUrl}/api/films`, { cache: "no-store" });
+    if (!filmsRes.ok) return [];
+    const data = await filmsRes.json();
+    films = Array.isArray(data.films) ? data.films : [];
+  } catch {
+    return [];
+  }
 
   const filmsWithMeta = await Promise.all(
     films.map(async (film) => {
       try {
         const metaUrl = `${vercelUrl}/api/metadata?title=${encodeURIComponent(film.title)}&year=${film.year || ""}`;
         const metaRes = await fetch(metaUrl, { cache: "no-store" });
+        if (!metaRes.ok) throw new Error("metadata gagal");
         const meta = await metaRes.json();
         return {
           ...film,

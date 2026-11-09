@@ -7,17 +7,26 @@ import Sidebar from "@/components/Sidebar";
 export const dynamic = "force-dynamic";
 
 async function getFilmsForHero() {
-  const serverUrl = process.env.NEXT_PUBLIC_STB_URL || "http://localhost:4000";
+  const serverUrl = process.env.STB_URL || "http://localhost:4000";
   const vercelUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+  const seed = Date.now();
 
-  const filmsRes = await fetch(`${serverUrl}/api/films`, { cache: "no-store" });
-  const { films } = await filmsRes.json();
+  let films = [];
+  try {
+    const filmsRes = await fetch(`${serverUrl}/api/films`, { cache: "no-store" });
+    if (!filmsRes.ok) return { films: [], seed };
+    const data = await filmsRes.json();
+    films = Array.isArray(data.films) ? data.films : [];
+  } catch {
+    return { films: [], seed };
+  }
 
   const filmsWithMeta = await Promise.all(
     films.map(async (film) => {
       try {
         const metaUrl = `${vercelUrl}/api/metadata?title=${encodeURIComponent(film.title)}&year=${film.year || ""}`;
         const metaRes = await fetch(metaUrl, { cache: "no-store" });
+        if (!metaRes.ok) throw new Error("metadata gagal");
         const meta = await metaRes.json();
         return {
           ...film,
@@ -33,11 +42,11 @@ async function getFilmsForHero() {
     })
   );
 
-  return filmsWithMeta;
+  return { films: filmsWithMeta, seed };
 }
 
 export default async function DashboardPage() {
-  const heroFilms = await getFilmsForHero();
+  const { films: heroFilms, seed: heroSeed } = await getFilmsForHero();
 
   return (
     <div style={{ display: "flex", minHeight: "100vh" }} className="bg-gray-50 dark:bg-[#111113]">
@@ -45,7 +54,7 @@ export default async function DashboardPage() {
 
       {/* Main */}
       <main style={{ flex: 1, minWidth: 0 }}>
-        <HeroBanner films={heroFilms} />
+        <HeroBanner films={heroFilms} seed={heroSeed} />
 
         {/* Film grid with Suspense — skeleton shows while streaming */}
         <Suspense fallback={<FilmGridSkeleton />}>

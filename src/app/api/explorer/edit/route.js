@@ -7,7 +7,7 @@ export async function POST(request) {
 
     const formData = await request.formData();
 
-    const serverUrl = new URL(`${process.env.NEXT_PUBLIC_STB_URL}/api/files/upload`);
+    const serverUrl = new URL(`${process.env.STB_URL || "http://localhost:4000"}/api/files/upload`);
     if (uploadPath) serverUrl.searchParams.set("path", uploadPath);
 
     const res = await fetch(serverUrl.toString(), {
@@ -21,7 +21,3 @@ export async function POST(request) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
-
-export const config = {
-  api: { bodyParser: false },
-};

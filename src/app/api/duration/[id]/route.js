@@ -1,6 +1,6 @@
 export async function GET(request, { params }) {
   const { id } = await params;
-  const serverUrl = process.env.NEXT_PUBLIC_STB_URL || "http://localhost:4000";
+  const serverUrl = process.env.STB_URL || "http://localhost:4000";
 
   try {
     const res = await fetch(`${serverUrl}/api/duration/${id}`, {

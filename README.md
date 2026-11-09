@@ -146,9 +146,8 @@ Buat file `.env.local`:
 # TMDB
 TMDB_API_KEY=your_tmdb_api_key
 
-# Backend server
+# Backend server (server-side only)
 STB_URL=https://api-rumahfilm.razn.my.id
-NEXT_PUBLIC_STB_URL=https://api-rumahfilm.razn.my.id
 
 # NextAuth
 NEXTAUTH_SECRET=generate_random_secret
@@ -250,8 +249,7 @@ Sully (2016).srt
 | Variable | Wajib | Deskripsi |
 |----------|-------|-----------|
 | `TMDB_API_KEY` | ✅ | API key dari themoviedb.org |
-| `STB_URL` | ✅ | URL backend server (tanpa `NEXT_PUBLIC_`) |
-| `NEXT_PUBLIC_STB_URL` | ✅ | URL backend server (client-side) |
+| `STB_URL` | ✅ | URL backend server (server-side only) |
 | `NEXTAUTH_SECRET` | ✅ | Secret untuk JWT token |
 | `NEXTAUTH_URL` | ✅ | URL frontend untuk NextAuth |
 | `NEXT_PUBLIC_BASE_URL` | ✅ | Base URL frontend |

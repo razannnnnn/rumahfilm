@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState, useRef } from "react";
+import { useCallback, useEffect, useState, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import Sidebar from "@/components/Sidebar";
 
@@ -74,12 +74,12 @@ export default function ExplorerPage() {
   const [deletingNames, setDeletingNames] = useState([]); // loading state per row
   const fileInputRef = useRef(null);
 
-  const showToast = (msg, type = "success") => {
+  const showToast = useCallback((msg, type = "success") => {
     setToast({ msg, type });
     setTimeout(() => setToast(null), 3000);
-  };
+  }, []);
 
-  const fetchFiles = async () => {
+  const fetchFiles = useCallback(async () => {
     try {
       const res = await fetch("/api/explorer");
       const { files } = await res.json();
@@ -89,9 +89,9 @@ export default function ExplorerPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [showToast]);
 
-  useEffect(() => { fetchFiles(); }, []);
+  useEffect(() => { fetchFiles(); }, [fetchFiles]);
 
   const filtered = files.filter((f) =>
     f.name.toLowerCase().includes(search.toLowerCase())

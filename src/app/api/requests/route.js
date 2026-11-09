@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
 import { appendRequest, getRequests } from "@/lib/googleSheets";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
 // POST — user kirim request film
 export async function POST(request) {
@@ -31,6 +33,11 @@ export async function POST(request) {
 
 // GET — admin ambil semua request
 export async function GET() {
+  const session = await getServerSession(authOptions);
+  if (!session || session.user.role !== "admin") {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
     const requests = await getRequests();
     return NextResponse.json({ requests });

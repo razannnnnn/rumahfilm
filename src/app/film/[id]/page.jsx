@@ -6,31 +6,33 @@ export const dynamic = "force-dynamic";
 import Sidebar from "@/components/Sidebar";
 
 async function getFilmDetail(id) {
-  const serverUrl = process.env.NEXT_PUBLIC_STB_URL || "http://localhost:4000";
+  const serverUrl = process.env.STB_URL || "http://localhost:4000";
   const appUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
 
-  if (!serverUrl) {
-    throw new Error("NEXT_PUBLIC_STB_URL tidak di-set di environment variables");
+  let film = null;
+  try {
+    const filmsRes = await fetch(`${serverUrl}/api/films`, { cache: "no-store" });
+    if (filmsRes.ok) {
+      const { films } = await filmsRes.json();
+      film = Array.isArray(films) ? films.find((item) => item.id === id) : null;
+    }
+  } catch {
+    film = null;
   }
 
-  const filmsRes = await fetch(`${serverUrl}/api/films`, { cache: "no-store" });
-
-  if (!filmsRes.ok) {
-    throw new Error(`Gagal fetch films: ${filmsRes.status}`);
-  }
-
-  const text = await filmsRes.text();
-  const { films } = JSON.parse(text);
-  const film = films.find((f) => f.id === id);
   if (!film) return null;
 
-  const metaRes = await fetch(
-    `${appUrl}/api/metadata?title=${encodeURIComponent(film.title)}&year=${film.year || ""}`,
-    { next: { revalidate: 86400 } }
-  );
-
-  const meta = await metaRes.json();
-  return { ...film, ...(meta.found ? meta : {}) };
+  try {
+    const metaRes = await fetch(
+      `${appUrl}/api/metadata?title=${encodeURIComponent(film.title)}&year=${film.year || ""}`,
+      { next: { revalidate: 86400 } }
+    );
+    if (!metaRes.ok) return film;
+    const meta = await metaRes.json();
+    return { ...film, ...(meta.found ? meta : {}) };
+  } catch {
+    return film;
+  }
 }
 
 export default async function FilmDetailPage({ params }) {
